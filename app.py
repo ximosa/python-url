@@ -1,85 +1,61 @@
 import streamlit as st
-from io import StringIO
-import nltk
-import os
-import ssl
 import re
 
-# Descargar los datos de nltk al inicio
-def download_nltk_data():
-    try:
-        _create_unverified_https_context = ssl._create_unverified_context
-    except AttributeError:
-         pass
-    else:
-        ssl._create_default_https_context = _create_unverified_https_context
-    try:
-        nltk.data.find("tokenizers/punkt_tab/spanish")
-    except LookupError:
-        st.write("Descargando los datos de nltk...")
-        nltk.download('punkt', quiet=True)
-        nltk.download('punkt_tab', quiet=True)
-        st.success("Datos de NLTK descargados con éxito!")
+def limpiar_transcripcion(texto):
+    """
+    Limpia y formatea una transcripción de YouTube.
 
-download_nltk_data()
+    Args:
+        texto (str): La transcripción sin formato.
 
-def procesar_texto_sin_ia(text):
-    """Procesa el texto sin IA agregando puntuación avanzada."""
-    # Eliminar saltos de línea
-    text = re.sub(r'\n', ' ', text)
-    # Eliminar espacios en blanco redundantes
-    text = re.sub(r'\s+', ' ', text).strip()
+    Returns:
+        str: La transcripción formateada para mejor lectura.
+    """
 
-    # Patrones para dividir oraciones (sin referencias a grupos)
-    patterns = [
-        r',\s+(y|o|pero|porque|aunque|sin embargo)\s+',
-        r'\b(cuando|mientras|después|antes|si)\b',
-        r',\s+que\s+',
-        r'\.\s+(y|o|pero|porque|aunque|sin embargo)\s+'
-    ]
-    for pattern in patterns:
-        text = re.sub(pattern, r', \1, ', text)
+    # 1. Eliminar saltos de línea redundantes y espacios extra
+    texto = re.sub(r'\s+', ' ', texto).strip()
+
+    # 2. Separar oraciones por puntos (si no los tienen)
+    # Asumimos que después de una mayúscula seguida de una palabra y espacio, sigue una nueva oración
+    texto = re.sub(r'([A-Z][a-z\s]*)\s', r'\1. ', texto)
     
-    # Agregar comas después de frases introductorias
-    text = re.sub(r'(en consecuencia|por lo tanto|además|sin embargo|en definitiva|por el contrario)\b', r'\1,', text, flags=re.IGNORECASE)
+    # 3. Corregir puntos al final de frases con comas
+    texto = re.sub(r'\.\,', ',', texto)
+    
+     # 4. Corregir espacios antes de los puntos
+    texto = re.sub(r'\s+\.', '.', texto)
 
-    # Agregar comas antes de "que"
-    text = re.sub(r'\s+(que)\s+', r', \1, ', text)
-   
-    # Manejar enumeraciones (ej. "uno la vibración del...")
-    text = re.sub(r'(\b\d+\b)\s+la', r'\1, la', text)
+    # 5. Capitalizar la primera letra de la primera oración
+    if texto:
+         texto = texto[0].upper() + texto[1:]
+    # 6. Capitalizar la primera letra después de un punto
+    texto = re.sub(r'\. ([a-z])', lambda m: '. ' + m.group(1).upper(), texto)
 
-    # Agregar punto al final de las oraciones
-    sentences = nltk.sent_tokenize(text, language='spanish')
-    puntuated_sentences = [sentence.strip() + "." for sentence in sentences]
+    return texto
 
-    return " ".join(puntuated_sentences)
+def descargar_texto(texto_formateado):
+    """
+    Genera un enlace de descarga para el texto formateado.
 
+    Args:
+        texto_formateado (str): El texto formateado.
 
-def crear_archivo_descarga(texto, filename="texto_mejorado.txt"):
-    stringio = StringIO()
-    stringio.write(texto)
-    return stringio.getvalue().encode('utf-8')
+    Returns:
+        streamlit.components.v1.html: Enlace de descarga.
+    """
+    return st.download_button(
+        label="Descargar Texto",
+        data=texto_formateado.encode('utf-8'),
+        file_name="transcripcion_formateada.txt",
+        mime="text/plain"
+    )
 
-def main():
-    st.title("Optimizador de Transcripciones para Lector de Voz")
-    st.markdown("Pega aquí tu transcripción sin puntuación:")
+st.title("Limpiador de Transcripciones de YouTube")
 
-    texto_transcripcion = st.text_area("Transcripción", height=200)
-    if texto_transcripcion:
-      if st.button("Procesar Texto"):
-        with st.spinner("Procesando Texto..."):
-            texto_procesado = procesar_texto_sin_ia(texto_transcripcion)
-            st.markdown("#### Transcripción Mejorada:")
-            st.write(texto_procesado)
-            st.markdown("#### Descargar como TXT:")
-            texto_descarga = crear_archivo_descarga(texto_procesado)
-            st.download_button(
-                label="Descargar TXT",
-                data=texto_descarga,
-                file_name="transcripcion_mejorada.txt",
-                mime="text/plain"
-            )
+transcripcion = st.text_area("Pega aquí tu transcripción sin formato:")
 
-if __name__ == "__main__":
-    main()
+if transcripcion:
+    texto_limpio = limpiar_transcripcion(transcripcion)
+    st.subheader("Transcripción Formateada:")
+    st.write(texto_limpio)
+    descargar_texto(texto_limpio)
