@@ -4,6 +4,7 @@ from io import StringIO
 import nltk
 import os
 import ssl
+import re
 
 # Configura la clave de API de Gemini desde los secretos de streamlit
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
@@ -21,9 +22,9 @@ def download_nltk_data():
     except LookupError:
         st.write("Descargando los datos de nltk...")
         nltk.download('punkt', quiet=True)
-        nltk.download('punkt_tab', quiet=True) # descargar punkt_tab
+        nltk.download('punkt_tab', quiet=True)
         st.success("Datos de NLTK descargados con éxito!")
-    
+
 # Descargar los datos de nltk al inicio
 download_nltk_data()
     
@@ -33,15 +34,13 @@ def mejorar_texto_gemini(text):
     Por favor, mejora la siguiente transcripción para que sea más adecuada para un lector de voz.
     Agrega puntuación (comas, puntos, etc.), crea oraciones claras y breves,
     y considera el flujo natural de la lectura.
-    Aquí está la transcripción:
+    Devuelve SOLO el texto mejorado, sin incluir ningún texto adicional.
     
     {text}
-    
-    Por favor, devuelve el texto mejorado:
     """
 
     response = model.generate_content(prompt)
-    return response.text
+    return response.text.strip()
 
 
 def dividir_transcripcion(text, max_chars=5000):
@@ -77,8 +76,8 @@ def main():
           for i, fragment in enumerate(fragments):
             st.write(f"Procesando fragmento {i+1}/{len(fragments)}...")
             texto_mejorado = mejorar_texto_gemini(fragment)
+            texto_mejorado = re.sub(r'\*','', texto_mejorado)  # Eliminar asteriscos
             textos_mejorados.append(texto_mejorado)
-
           texto_completo = " ".join(textos_mejorados)
           st.markdown("#### Transcripción Mejorada:")
           st.write(texto_completo)
