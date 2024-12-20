@@ -6,7 +6,7 @@ import base64
 def search_most_popular_music(limit=5):
     """Busca la música más popular en YouTube."""
     try:
-        s = Search("top music")
+        s = Search("top 10 pop music") # Término de búsqueda más específico
         results = s.results[:limit]
         return results
     except Exception as e:
