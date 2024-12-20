@@ -1,7 +1,7 @@
 streamlit
 requests
 beautifulsoup4
-spacy
+spacy==3.7.2
 gTTS
 moviepy==1.0.3
 Pillow
@@ -11,4 +11,3 @@ transformers
 torch
 imageio-ffmpeg==0.4.9
 imageio
--e .
