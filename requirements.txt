@@ -1,10 +1,2 @@
 streamlit
-requests
-beautifulsoup4
-gTTS
-moviepy
-Pillow
-numpy
-psutil
-imageio-ffmpeg
-imageio
+pytube
