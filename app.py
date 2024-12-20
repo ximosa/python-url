@@ -16,7 +16,6 @@ def search_most_popular_music(limit=5):
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=False) #check=False
         output = result.stdout
-        stderr = result.stderr
         
         #Procesa la salida
         videos = []
@@ -26,17 +25,7 @@ def search_most_popular_music(limit=5):
                 videos.append(video_data)
             except json.JSONDecodeError:
                 st.error(f"Error al decodificar json: {line}")
-        
-        #Filtrar videos que dieron error
-        filtered_videos = []
-        for video in videos:
-            if f"Video unavailable. The uploader has not made this video available" in stderr:
-                if not stderr.find(video.get("id")) == -1:
-                     st.warning(f"El video {video.get('title')} no está disponible en tu pais")
-            else:
-                filtered_videos.append(video)
-        return filtered_videos
-
+        return videos
     except subprocess.CalledProcessError as e:
         st.error(f"Error al buscar en YouTube con yt-dlp: {e.stderr}")
         return []
@@ -144,7 +133,7 @@ def play_audio_sequence(audio_urls):
 def main():
     st.title("Música Popular de YouTube")
     
-    limit = st.number_input("Número de resultados:", min_value=1, max_value=10, value=5)
+    limit = st.number_input("Número de resultados:", min_value=1, max_value=20, value=5)
     
     search_results = search_most_popular_music(limit)
 
