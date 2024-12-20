@@ -3,13 +3,29 @@ import google.generativeai as genai
 from io import StringIO
 import nltk
 import os
-nltk.download('punkt')  # Descargar data necesaria para sent_tokenize
+import ssl
 
 # Configura la clave de API de Gemini desde los secretos de streamlit
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 genai.configure(api_key=GOOGLE_API_KEY)
 
-
+def download_nltk_data():
+    try:
+        _create_unverified_https_context = ssl._create_unverified_context
+    except AttributeError:
+         pass
+    else:
+        ssl._create_default_https_context = _create_unverified_https_context
+    try:
+        nltk.data.find("tokenizers/punkt")
+    except LookupError:
+        st.write("Descargando los datos de nltk...")
+        nltk.download('punkt', quiet=True)
+        st.success("Datos de NLTK descargados con éxito!")
+    
+# Descargar los datos de nltk al inicio
+download_nltk_data()
+    
 def mejorar_texto_gemini(text):
     model = genai.GenerativeModel('gemini-pro')
     prompt = f"""
@@ -40,7 +56,6 @@ def dividir_transcripcion(text, max_chars=5000):
             current_fragment = sentence + " "
     fragments.append(current_fragment.strip())
     return fragments
-
 
 
 def crear_archivo_descarga(texto, filename="texto_mejorado.txt"):
