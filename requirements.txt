@@ -7,3 +7,6 @@ moviepy
 Pillow
 transformers
 torch
+imageio
+imageio-ffmpeg
+numpy
