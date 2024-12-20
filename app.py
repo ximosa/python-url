@@ -1,4 +1,3 @@
-```python
 import streamlit as st
 import os
 from moviepy.editor import ImageSequenceClip, AudioFileClip
@@ -21,7 +20,7 @@ EXPECTED_NUMPY_VERSION = "1.23.4" # Variable para verificar versión de numpy
 if np.__version__ != EXPECTED_NUMPY_VERSION:
     st.error(f"¡Error! La versión de numpy no es la esperada. Streamlit Cloud tiene la versión {np.__version__}, se esperaba la versión {EXPECTED_NUMPY_VERSION}. Por favor, contacta a soporte o vuelve a intentar desplegar más tarde.")
     st.stop()  # Detener la ejecución si la versión no es la correcta.
-    
+
 def descargar_modelo_spacy(model_name):
     """Descarga el modelo de spaCy si no está instalado."""
     try:
@@ -73,7 +72,7 @@ def obtener_contenido_web_mejorado(url):
         if nlp:
             docs = [nlp(item["texto"]) for item in textos_estructurados]
         else:
-           docs = []
+            docs = []
         return True, {
             "titulo": titulo,
             "textos_estructurados": textos_estructurados,
@@ -101,9 +100,9 @@ def descargar_imagenes(lista_urls, carpeta_destino):
                     for chunk in response.iter_content(chunk_size=8192):
                         archivo.write(chunk)
                 imagenes_descargadas.append(ruta_archivo)
-        except requests.exceptions.RequestException as e:
-            print(f"Error al descargar imagen {url}: {e}")
-        return True, imagenes_descargadas
+            except requests.exceptions.RequestException as e:
+                print(f"Error al descargar imagen {url}: {e}")
+            return True, imagenes_descargadas
     except Exception as e:
         return False, str(e)
 
@@ -117,7 +116,7 @@ def texto_a_voz_mejorado(texto, ruta_audio, idioma="es", velocidad=1.0, tono=0.0
 
 # resumidor = pipeline("summarization") # Eliminado para evitar problemas con torch
 def resumir_texto(texto, longitud_maxima=150):
-  return True, texto
+    return True, texto
     # try:
     #  resumen = resumidor(texto, max_length=longitud_maxima, min_length=30)[0]['summary_text']
     #  return True, resumen
@@ -215,8 +214,8 @@ def main():
             if exito_audio:
                st.success("Audio creado.")
             else:
-               st.error(f"Error creando audio: {error_audio}")
-               return
+                st.error(f"Error creando audio: {error_audio}")
+                return
 
             st.info("Creando fotogramas...")
             exito_fotogramas, error_fotogramas = crear_fotogramas_mejorado(textos_resumen, rutas_imagenes, ruta_fotogramas)
@@ -242,4 +241,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-```
