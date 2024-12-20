@@ -40,7 +40,7 @@ def get_audio_link(video_url):
             "yt-dlp",
             "--dump-json",
             "--skip-download",
-            "--format", "bestaudio", # No forzar extension
+           "--format", "bestaudio", # No forzar extension
             video_url
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
@@ -63,11 +63,36 @@ def get_audio_link(video_url):
 def create_download_link(audio_url, filename):
     """Crea un link de descarga para el audio."""
     try:
+        # Obtener formatos disponibles
+        command = [
+            "yt-dlp",
+            "--list-formats",
+            audio_url
+        ]
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        formats_output = result.stdout
+        
+        available_formats = formats_output.splitlines()
+        
+        # Verificar si existe formato mp4 o m4a
+        audio_format = None
+        for line in available_formats:
+            if "mp4" in line and "audio" in line :
+                 audio_format = "bestaudio[ext=mp4]"
+                 break
+            elif "m4a" in line and "audio" in line :
+                audio_format = "bestaudio[ext=m4a]"
+                break
+
+        if not audio_format:
+             st.error(f"No se encontraron formatos de audio mp4 o m4a disponibles para {filename}. No se puede descargar.")
+             return None
+
         command = [
             "yt-dlp",
             "--print",
             "url",
-            "--format", "bestaudio", # No forzar extension
+            "--format", audio_format,
             audio_url
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
@@ -77,7 +102,7 @@ def create_download_link(audio_url, filename):
              "yt-dlp",
             "--print",
             "url",
-            "--format", "bestaudio", # No forzar extension
+            "--format", audio_format,
             audio_url
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
@@ -87,14 +112,14 @@ def create_download_link(audio_url, filename):
               "yt-dlp",
               "--print",
               "url",
-            "--format", "bestaudio", # No forzar extension
+              "--format", audio_format,
              audio_url_final
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         
         command = [
             "yt-dlp",
-            "--format", "bestaudio", # No forzar extension
+            "--format", audio_format,
             "-o", "-", #Imprime la descarga en stdout
            audio_url_final
         ]
@@ -111,7 +136,7 @@ def create_download_link(audio_url, filename):
         href = f'<a href="data:audio/mp4;base64,{b64}" download="{filename}.mp4">Descargar</a>'
         return href
     except subprocess.CalledProcessError as e:
-        st.error(f"Error al crear link de descarga, puede que el formato de audio no esté disponible {e.stderr}")
+        st.error(f"Error al crear link de descarga: {e.stderr}")
         return None
     except Exception as e:
         st.error(f"Error al crear link de descarga: {e}")
