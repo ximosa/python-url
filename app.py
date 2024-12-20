@@ -30,15 +30,15 @@ def procesar_texto_sin_ia(text):
     # Eliminar espacios en blanco redundantes
     text = re.sub(r'\s+', ' ', text).strip()
 
-    # Patrones para dividir oraciones
+    # Patrones para dividir oraciones (sin referencias a grupos)
     patterns = [
-        r'(,)\s+(y|o|pero|porque|aunque|sin embargo)\s+',
+        r',\s+(y|o|pero|porque|aunque|sin embargo)\s+',
         r'\b(cuando|mientras|después|antes|si)\b',
-        r'(,)\s+que\s+',
-        r'(\.)\s+(y|o|pero|porque|aunque|sin embargo)\s+'
+        r',\s+que\s+',
+        r'\.\s+(y|o|pero|porque|aunque|sin embargo)\s+'
     ]
     for pattern in patterns:
-         text = re.sub(pattern, r'\1 \2, ', text)
+        text = re.sub(pattern, r', \1, ', text)
     
     # Agregar comas después de frases introductorias
     text = re.sub(r'(en consecuencia|por lo tanto|además|sin embargo|en definitiva|por el contrario)\b', r'\1,', text, flags=re.IGNORECASE)
@@ -46,7 +46,7 @@ def procesar_texto_sin_ia(text):
     # Agregar comas antes de "que"
     text = re.sub(r'\s+(que)\s+', r', \1, ', text)
    
-     # Manejar enumeraciones (ej. "uno la vibración del...")
+    # Manejar enumeraciones (ej. "uno la vibración del...")
     text = re.sub(r'(\b\d+\b)\s+la', r'\1, la', text)
 
     # Agregar punto al final de las oraciones
