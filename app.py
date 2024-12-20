@@ -3,7 +3,6 @@ import os
 from moviepy.editor import ImageSequenceClip, AudioFileClip
 from bs4 import BeautifulSoup
 import requests
-import spacy
 from gtts import gTTS
 # from transformers import pipeline # Comentado para evitar conflictos
 from PIL import Image, ImageDraw, ImageFont
@@ -11,9 +10,9 @@ import time
 import subprocess
 import numpy as np
 
-# --- Configuración de spaCy ---
-MODEL_NAME = "es_core_news_sm"
-MODEL_INSTALLED = False
+# --- Configuración de spaCy (Removido) ---
+# MODEL_NAME = "es_core_news_sm"
+# MODEL_INSTALLED = False
 
 EXPECTED_NUMPY_VERSION = "1.23.4" # Variable para verificar versión de numpy
 
@@ -21,37 +20,39 @@ if np.__version__ != EXPECTED_NUMPY_VERSION:
     st.error(f"¡Error! La versión de numpy no es la esperada. Streamlit Cloud tiene la versión {np.__version__}, se esperaba la versión {EXPECTED_NUMPY_VERSION}. Por favor, contacta a soporte o vuelve a intentar desplegar más tarde.")
     st.stop()  # Detener la ejecución si la versión no es la correcta.
 
-def descargar_modelo_spacy(model_name):
-    """Descarga el modelo de spaCy si no está instalado."""
-    try:
-        import spacy
-        spacy.load(model_name)
-        return True
-    except OSError:
-        st.info(f"Descargando modelo de spaCy '{model_name}'...")
-        try:
-            subprocess.check_call(["python", "-m", "spacy", "download", model_name])
-            return True
-        except Exception as e:
-            st.error(f"Error al descargar el modelo: {e}")
-            return False
-    except Exception as e:
-        st.error(f"Error desconocido al cargar o descargar el modelo: {e}")
-        return False
+# def descargar_modelo_spacy(model_name):
+#     """Descarga el modelo de spaCy si no está instalado."""
+#     try:
+#         import spacy
+#         spacy.load(model_name)
+#         return True
+#     except OSError:
+#         st.info(f"Descargando modelo de spaCy '{model_name}'...")
+#         try:
+#             subprocess.check_call(["python", "-m", "spacy", "download", model_name])
+#             return True
+#         except Exception as e:
+#             st.error(f"Error al descargar el modelo: {e}")
+#             return False
+#     except Exception as e:
+#         st.error(f"Error desconocido al cargar o descargar el modelo: {e}")
+#         return False
 
-if not MODEL_INSTALLED:
-    MODEL_INSTALLED = descargar_modelo_spacy(MODEL_NAME)
+# if not MODEL_INSTALLED:
+#     MODEL_INSTALLED = descargar_modelo_spacy(MODEL_NAME)
 
-if MODEL_INSTALLED:
-    try:
-        nlp = spacy.load(MODEL_NAME)
-        st.write("Modelo de spaCy cargado correctamente.")
-    except Exception as e:
-        st.error(f"Error al cargar el modelo de spaCy: {e}")
-        nlp = None
-else:
-    nlp = None
-    st.write("Error en el proceso.")
+# if MODEL_INSTALLED:
+#     try:
+#         import spacy
+#         nlp = spacy.load(MODEL_NAME)
+#         st.write("Modelo de spaCy cargado correctamente.")
+#     except Exception as e:
+#         st.error(f"Error al cargar el modelo de spaCy: {e}")
+#         nlp = None
+# else:
+#     nlp = None
+#     st.write("Error en el proceso.")
+nlp = None # Eliminamos las referencias a `nlp`
 
 # --- Funciones ---
 def obtener_contenido_web_mejorado(url):
@@ -69,10 +70,10 @@ def obtener_contenido_web_mejorado(url):
                 tipo_elemento = elemento.name
                 textos_estructurados.append({"tipo": tipo_elemento, "texto": text})
         imagenes = [img['src'] for img in soup.find_all('img') if 'src' in img.attrs]
-        if nlp:
-            docs = [nlp(item["texto"]) for item in textos_estructurados]
-        else:
-            docs = []
+        # if nlp: # Eliminamos la dependencia de `nlp`
+        #     docs = [nlp(item["texto"]) for item in textos_estructurados]
+        # else:
+        docs = [] # Dejamos esto vacío para evitar fallos
         return True, {
             "titulo": titulo,
             "textos_estructurados": textos_estructurados,
@@ -100,9 +101,9 @@ def descargar_imagenes(lista_urls, carpeta_destino):
                     for chunk in response.iter_content(chunk_size=8192):
                         archivo.write(chunk)
                 imagenes_descargadas.append(ruta_archivo)
-            except requests.exceptions.RequestException as e:
-                print(f"Error al descargar imagen {url}: {e}")
-            return True, imagenes_descargadas
+        except requests.exceptions.RequestException as e:
+            print(f"Error al descargar imagen {url}: {e}")
+        return True, imagenes_descargadas
     except Exception as e:
         return False, str(e)
 
@@ -116,7 +117,7 @@ def texto_a_voz_mejorado(texto, ruta_audio, idioma="es", velocidad=1.0, tono=0.0
 
 # resumidor = pipeline("summarization") # Eliminado para evitar problemas con torch
 def resumir_texto(texto, longitud_maxima=150):
-    return True, texto
+    return True, texto # Eliminamos la funcionalidad de resumen
     # try:
     #  resumen = resumidor(texto, max_length=longitud_maxima, min_length=30)[0]['summary_text']
     #  return True, resumen
@@ -228,14 +229,14 @@ def main():
             st.info("Reconstruyendo video...")
             exito_reconstruir, error_reconstruir = reconstruir_video(ruta_fotogramas, ruta_audio, ruta_video_salida)
             if exito_reconstruir:
-                st.success("Video creado!")
-                with open(ruta_video_salida, "rb") as file:
-                    btn = st.download_button(
-                        label="Descargar Video",
-                        data=file,
-                        file_name="video_web.mp4",
-                        mime="video/mp4"
-                    )
+               st.success("Video creado!")
+               with open(ruta_video_salida, "rb") as file:
+                   btn = st.download_button(
+                       label="Descargar Video",
+                       data=file,
+                       file_name="video_web.mp4",
+                       mime="video/mp4"
+                   )
             else:
                 st.error(f"Error reconstruyendo video: {error_reconstruir}")
 
