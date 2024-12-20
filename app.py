@@ -1,245 +1,101 @@
 import streamlit as st
-import os
-from moviepy.editor import ImageSequenceClip, AudioFileClip
-from bs4 import BeautifulSoup
-import requests
-from gtts import gTTS
-# from transformers import pipeline # Comentado para evitar conflictos
-from PIL import Image, ImageDraw, ImageFont
-import time
-import subprocess
-import numpy as np
+from pytube import Search, YouTube
+from io import BytesIO
+import base64
 
-# --- Configuración de spaCy (Removido por completo) ---
-# MODEL_NAME = "es_core_news_sm"
-# MODEL_INSTALLED = False
-
-# EXPECTED_NUMPY_VERSION = "1.23.4" # Variable para verificar versión de numpy
-
-# Eliminar comprobación de versión de numpy
-# if np.__version__ != EXPECTED_NUMPY_VERSION:
-#     st.error(f"¡Error! La versión de numpy no es la esperada. Streamlit Cloud tiene la versión {np.__version__}, se esperaba la versión {EXPECTED_NUMPY_VERSION}. Por favor, contacta a soporte o vuelve a intentar desplegar más tarde.")
-#     st.stop()  # Detener la ejecución si la versión no es la correcta.
-    
-# def descargar_modelo_spacy(model_name):
-#     """Descarga el modelo de spaCy si no está instalado."""
-#     try:
-#         import spacy
-#         spacy.load(model_name)
-#         return True
-#     except OSError:
-#         st.info(f"Descargando modelo de spaCy '{model_name}'...")
-#         try:
-#             subprocess.check_call(["python", "-m", "spacy", "download", model_name])
-#             return True
-#         except Exception as e:
-#             st.error(f"Error al descargar el modelo: {e}")
-#             return False
-#     except Exception as e:
-#         st.error(f"Error desconocido al cargar o descargar el modelo: {e}")
-#         return False
-
-# if not MODEL_INSTALLED:
-#     MODEL_INSTALLED = descargar_modelo_spacy(MODEL_NAME)
-
-# if MODEL_INSTALLED:
-#     try:
-#         import spacy
-#         nlp = spacy.load(MODEL_NAME)
-#         st.write("Modelo de spaCy cargado correctamente.")
-#     except Exception as e:
-#         st.error(f"Error al cargar el modelo de spaCy: {e}")
-#         nlp = None
-# else:
-#     nlp = None
-#     st.write("Error en el proceso.")
-nlp = None # Eliminamos las referencias a `nlp`
-
-# --- Funciones ---
-def obtener_contenido_web_mejorado(url):
+def search_most_popular_music(limit=5):
+    """Busca la música más popular en YouTube."""
     try:
-        response = requests.get(url)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        titulo = soup.title.string if soup.title else "Sin título"
-        elementos_texto = soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
-        textos_estructurados = []
-
-        for elemento in elementos_texto:
-            text = elemento.get_text(strip=True)
-            if text:
-                tipo_elemento = elemento.name
-                textos_estructurados.append({"tipo": tipo_elemento, "texto": text})
-        imagenes = [img['src'] for img in soup.find_all('img') if 'src' in img.attrs]
-        # if nlp: # Eliminamos la dependencia de `nlp`
-        #     docs = [nlp(item["texto"]) for item in textos_estructurados]
-        # else:
-        docs = [] # Dejamos esto vacío para evitar fallos
-        return True, {
-            "titulo": titulo,
-            "textos_estructurados": textos_estructurados,
-            "documentos": docs,
-            "imagenes": imagenes
-        }
-    except requests.exceptions.RequestException as e:
-        return False, str(e)
+        s = Search("top music") #esto se puede cambiar
+        results = s.results[:limit]
+        return results
     except Exception as e:
-        return False, str(e)
+        st.error(f"Error al buscar en YouTube: {e}")
+        return []
 
-def descargar_imagenes(lista_urls, carpeta_destino):
+def get_audio_link(video_url):
+    """Obtiene el link de audio de un video de YouTube."""
     try:
-        imagenes_descargadas = []
-        for i, url in enumerate(lista_urls):
-            if not url.startswith("http"):
-                continue
-            try:
-                response = requests.get(url, stream=True)
-                response.raise_for_status()
-                extension = os.path.splitext(url)[1]
-                nombre_archivo = f"imagen_{i}{extension}"
-                ruta_archivo = os.path.join(carpeta_destino, nombre_archivo)
-                with open(ruta_archivo, 'wb') as archivo:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        archivo.write(chunk)
-                imagenes_descargadas.append(ruta_archivo)
-        except requests.exceptions.RequestException as e:
-            print(f"Error al descargar imagen {url}: {e}")
-        return True, imagenes_descargadas
+        yt = YouTube(video_url)
+        audio_stream = yt.streams.filter(only_audio=True).first()
+        return audio_stream.url, yt.title
     except Exception as e:
-        return False, str(e)
+        st.error(f"Error al obtener el audio de {video_url}: {e}")
+        return None, None
 
-def texto_a_voz_mejorado(texto, ruta_audio, idioma="es", velocidad=1.0, tono=0.0):
+def create_download_link(audio_url, filename):
+    """Crea un link de descarga para el audio."""
     try:
-        tts = gTTS(text=texto, lang=idioma)
-        tts.save(ruta_audio)
-        return True, None
+        yt = YouTube(audio_url)
+        audio_stream = yt.streams.filter(only_audio=True).first()
+        buffer = BytesIO()
+        audio_stream.stream_to_buffer(buffer)
+        buffer.seek(0)
+        b64 = base64.b64encode(buffer.read()).decode()
+        href = f'<a href="data:audio/mp4;base64,{b64}" download="{filename}.mp4">Descargar</a>'
+        return href
     except Exception as e:
-        return False, str(e)
+        st.error(f"Error al crear link de descarga: {e}")
+        return None
 
-# resumidor = pipeline("summarization") # Eliminado para evitar problemas con torch
-def resumir_texto(texto, longitud_maxima=150):
-    return True, texto # Eliminamos la funcionalidad de resumen
-    # try:
-    #  resumen = resumidor(texto, max_length=longitud_maxima, min_length=30)[0]['summary_text']
-    #  return True, resumen
-    # except Exception as e:
-    #  return False, str(e)
+def play_audio_sequence(audio_urls):
+    """Reproduce una secuencia de audios."""
+    if not audio_urls:
+        st.warning("No hay URLs de audio para reproducir.")
+        return
 
-def crear_fotogramas_mejorado(textos, rutas_imagenes, carpeta_fotogramas):
-    try:
-        imagenes_generadas = []
-        for i, texto in enumerate(textos):
-            img = Image.new('RGB', (800, 600), color=(255, 255, 255))
-            d = ImageDraw.Draw(img)
-            font = ImageFont.truetype('arial.ttf', size=30)
+    for audio_url in audio_urls:
+        try:
+            st.audio(audio_url)
+        except Exception as e:
+             st.error(f"Error al reproducir {audio_url}: {e}")
+    st.success("Reproducción completada.")
 
-            d.text((50, 50), texto, fill=(0, 0, 0), font=font)
-
-            if i < len(rutas_imagenes):
-                try:
-                    imagen_web = Image.open(rutas_imagenes[i])
-                    imagen_web.thumbnail((200,200))
-                    img.paste(imagen_web, (400, 200))
-                except:
-                    pass # si no se puede, no pasa nada
-
-            nombre_archivo = f"frame_{i:04d}.png"
-            ruta_archivo = os.path.join(carpeta_fotogramas, nombre_archivo)
-            img.save(ruta_archivo)
-            imagenes_generadas.append(ruta_archivo)
-        return True, imagenes_generadas
-    except Exception as e:
-        return False, str(e)
-
-def reconstruir_video(ruta_fotogramas, ruta_audio, ruta_video_salida, fps=2):
-    try:
-        image_files = [os.path.join(ruta_fotogramas, img) for img in os.listdir(ruta_fotogramas) if img.endswith((".jpg", ".png"))]
-        image_files.sort()
-        clip = ImageSequenceClip(image_files, fps=fps)
-        audio = AudioFileClip(ruta_audio)
-        clip_con_audio = clip.set_audio(audio)
-        clip_con_audio.write_videofile(ruta_video_salida, codec="libx264")
-        return True, None
-    except Exception as e:
-        return False, str(e)
-
-# --- Interfaz de Streamlit ---
 def main():
-    st.title("Generador de Videos Inteligente")
-    url = st.text_input("Ingresa la URL de la página web:")
+    st.title("Música Popular de YouTube")
+    
+    limit = st.number_input("Número de resultados:", min_value=1, max_value=10, value=5)
+    
+    search_results = search_most_popular_music(limit)
 
-    if url:
-        if st.button("Generar Video"):
-            ruta_carpeta_temporal = "temporal"
-            ruta_imagenes_web = os.path.join(ruta_carpeta_temporal, "imagenes_web")
-            ruta_audio = os.path.join(ruta_carpeta_temporal, "audio.mp3")
-            ruta_fotogramas = os.path.join(ruta_carpeta_temporal, "fotogramas")
-            ruta_video_salida = os.path.join(ruta_carpeta_temporal, "video_final.mp4")
+    if not search_results:
+        st.warning("No se encontraron resultados. Inténtalo de nuevo.")
+        return
 
-            if not os.path.exists(ruta_carpeta_temporal):
-                os.makedirs(ruta_carpeta_temporal)
-            if not os.path.exists(ruta_imagenes_web):
-                os.makedirs(ruta_imagenes_web)
-            if not os.path.exists(ruta_fotogramas):
-                os.makedirs(ruta_fotogramas)
+    audio_links_data = []
+    for video in search_results:
+       audio_url, title= get_audio_link(f"https://www.youtube.com/watch?v={video.video_id}")
+       if audio_url:
+          audio_links_data.append({"title":title, "audio_url":audio_url})
 
-            st.info("Obteniendo contenido de la web...")
-            exito, contenido = obtener_contenido_web_mejorado(url)
-            if exito:
-                st.success("Contenido web obtenido.")
-            else:
-                st.error(f"Error al obtener contenido web: {contenido}")
-                return
+    if not audio_links_data:
+        st.warning("No se encontraron URLs de audio. Inténtalo de nuevo.")
+        return
 
-            st.info("Descargando imagenes...")
-            exito, rutas_imagenes = descargar_imagenes(contenido["imagenes"], ruta_imagenes_web)
-            if exito:
-                st.success("Imagenes descargadas.")
-            else:
-                st.error(f"Error descargando imágenes: {rutas_imagenes}")
-                return
+    st.subheader("Lista de Música")
+    audio_urls = []
+    for item in audio_links_data:
+        audio_url = item["audio_url"]
+        title = item["title"]
+        
+        
+        col1, col2, col3 = st.columns(3)
 
-            st.info("Resumiendo texto...")
-            textos_resumen = []
-            for item in contenido["textos_estructurados"]:
-                if item["tipo"] == "p":
-                    exito_resumen, resumen = resumir_texto(item["texto"])
-                    if exito_resumen:
-                        textos_resumen.append(resumen)
-                    else:
-                        textos_resumen.append(item["texto"])
-                else:
-                    textos_resumen.append(item["texto"])
-            st.info("Creando audio a partir del texto...")
-            texto_completo = " ".join(textos_resumen)
-            exito_audio, error_audio = texto_a_voz_mejorado(texto_completo, ruta_audio)
-            if exito_audio:
-               st.success("Audio creado.")
-            else:
-                st.error(f"Error creando audio: {error_audio}")
-                return
+        with col1:
+            st.write(title)
+        with col2:
+            if audio_url:
+                st.audio(audio_url, format="audio/mp4")
+        with col3:
+           if audio_url:
+                download_link = create_download_link(audio_url, title)
+                if download_link:
+                   st.markdown(download_link, unsafe_allow_html=True)
+        audio_urls.append(audio_url)
 
-            st.info("Creando fotogramas...")
-            exito_fotogramas, error_fotogramas = crear_fotogramas_mejorado(textos_resumen, rutas_imagenes, ruta_fotogramas)
-            if exito_fotogramas:
-                st.success("Fotogramas creados.")
-            else:
-                st.error(f"Error creando fotogramas: {error_fotogramas}")
-                return
-
-            st.info("Reconstruyendo video...")
-            exito_reconstruir, error_reconstruir = reconstruir_video(ruta_fotogramas, ruta_audio, ruta_video_salida)
-            if exito_reconstruir:
-               st.success("Video creado!")
-               with open(ruta_video_salida, "rb") as file:
-                   btn = st.download_button(
-                       label="Descargar Video",
-                       data=file,
-                       file_name="video_web.mp4",
-                       mime="video/mp4"
-                   )
-            else:
-                st.error(f"Error reconstruyendo video: {error_reconstruir}")
-
+    if audio_urls:
+            if st.button("Reproducir Todos"):
+                play_audio_sequence(audio_urls)
+                
 if __name__ == "__main__":
     main()
