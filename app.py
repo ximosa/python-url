@@ -101,11 +101,12 @@ def descargar_imagenes(lista_urls, carpeta_destino):
                     for chunk in response.iter_content(chunk_size=8192):
                         archivo.write(chunk)
                 imagenes_descargadas.append(ruta_archivo)
-        except requests.exceptions.RequestException as e:
-            print(f"Error al descargar imagen {url}: {e}")
+            except requests.exceptions.RequestException as e:
+                 print(f"Error al descargar imagen {url}: {e}")
         return True, imagenes_descargadas
-    except Exception as e:
+    except Exception as e: # Añadimos el except para manejar la excepción en el bloque principal try
         return False, str(e)
+
 
 def texto_a_voz_mejorado(texto, ruta_audio, idioma="es", velocidad=1.0, tono=0.0):
     try:
