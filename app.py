@@ -3,6 +3,7 @@ import subprocess
 import json
 from io import BytesIO
 import base64
+import os
 
 def search_most_popular_music(limit=5):
     """Busca la música más popular en YouTube usando yt-dlp."""
@@ -40,7 +41,7 @@ def get_audio_link(video_url):
             "yt-dlp",
             "--dump-json",
             "--skip-download",
-           "--format", "bestaudio", # No forzar extension
+            "--format", "bestaudio", # No forzar extension
             video_url
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
@@ -74,19 +75,67 @@ def create_download_link(audio_url, filename):
         
         available_formats = formats_output.splitlines()
         
-        # Verificar si existe formato mp4 o m4a
+        # Verificar si existe formato mp4, m4a, webm o opus
         audio_format = None
+        audio_ext = None
         for line in available_formats:
             if "mp4" in line and "audio" in line :
-                 audio_format = "bestaudio[ext=mp4]"
-                 break
-            elif "m4a" in line and "audio" in line :
-                audio_format = "bestaudio[ext=m4a]"
+                audio_format = "bestaudio[ext=mp4]"
+                audio_ext = "mp4"
                 break
+            elif "m4a" in line and "audio" in line:
+                 audio_format = "bestaudio[ext=m4a]"
+                 audio_ext = "m4a"
+                 break
+            elif "webm" in line and "audio" in line:
+                audio_format = "bestaudio[ext=webm]"
+                audio_ext = "webm"
+                break
+            elif "opus" in line and "audio" in line:
+                 audio_format = "bestaudio[ext=opus]"
+                 audio_ext = "opus"
+                 break
 
         if not audio_format:
-             st.error(f"No se encontraron formatos de audio mp4 o m4a disponibles para {filename}. No se puede descargar.")
-             return None
+            # Si no se encuentra un formato comun, intentamos extraer el audio del video con ffmpeg
+            st.warning(f"No se encontraron formatos de audio mp4, m4a, webm o opus, intentando extraer el audio con ffmpeg para {filename}")
+            if is_ffmpeg_installed():
+                 try:
+                     command = [
+                        "yt-dlp",
+                        "--format", "bestvideo[height<=720]",  # Descargar el video (no la máxima calidad)
+                        "--output", "-",
+                        audio_url,
+                    ]
+                     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                     video_stdout, video_stderr = process.communicate()
+                     if process.returncode !=0:
+                         raise Exception(f"yt-dlp download video failed: {video_stderr.decode('utf-8')}")
+
+                     command = [
+                            "ffmpeg",
+                            "-i", "-",
+                            "-vn", # No video
+                            "-acodec", "libmp3lame",  # Audio a mp3
+                            "-f", "mp3",  # Formato mp3
+                            "-",
+                        ]
+                     process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                     stdout, stderr = process.communicate(input=video_stdout)
+                     if process.returncode !=0:
+                         raise Exception(f"ffmpeg convert failed: {stderr.decode('utf-8')}")
+
+                     audio_ext = "mp3"
+                     buffer = BytesIO(stdout)
+                     b64 = base64.b64encode(buffer.read()).decode()
+                     href = f'<a href="data:audio/{audio_ext};base64,{b64}" download="{filename}.{audio_ext}">Descargar</a>'
+                     return href
+                 except Exception as e:
+                     st.error(f"No se pudo extraer el audio con ffmpeg para {filename}, puede que ffmpeg no esté instalado o que haya un error con el video: {e}")
+                     return None
+            else:
+                 st.error(f"No se pudo extraer el audio con ffmpeg para {filename}, puede que ffmpeg no esté instalado.")
+                 return None
 
         command = [
             "yt-dlp",
@@ -102,7 +151,7 @@ def create_download_link(audio_url, filename):
              "yt-dlp",
             "--print",
             "url",
-            "--format", audio_format,
+             "--format", audio_format,
             audio_url
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
@@ -112,7 +161,7 @@ def create_download_link(audio_url, filename):
               "yt-dlp",
               "--print",
               "url",
-              "--format", audio_format,
+             "--format", audio_format,
              audio_url_final
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
@@ -133,7 +182,7 @@ def create_download_link(audio_url, filename):
 
         buffer = BytesIO(stdout)
         b64 = base64.b64encode(buffer.read()).decode()
-        href = f'<a href="data:audio/mp4;base64,{b64}" download="{filename}.mp4">Descargar</a>'
+        href = f'<a href="data:audio/{audio_ext};base64,{b64}" download="{filename}.{audio_ext}">Descargar</a>'
         return href
     except subprocess.CalledProcessError as e:
         st.error(f"Error al crear link de descarga: {e.stderr}")
@@ -141,6 +190,14 @@ def create_download_link(audio_url, filename):
     except Exception as e:
         st.error(f"Error al crear link de descarga: {e}")
         return None
+
+def is_ffmpeg_installed():
+    """Verifica si ffmpeg está instalado en el sistema."""
+    try:
+        subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
+        return True
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return False
 
 def play_audio_sequence(audio_urls):
     """Reproduce una secuencia de audios."""
