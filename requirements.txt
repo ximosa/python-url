@@ -3,10 +3,11 @@ requests
 beautifulsoup4
 spacy
 gTTS
-moviepy
+moviepy==1.0.3
 Pillow
+numpy
+psutil
 transformers
 torch
+imageio-ffmpeg==0.4.9
 imageio
-imageio-ffmpeg
-numpy
