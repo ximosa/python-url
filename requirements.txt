@@ -2,9 +2,9 @@ streamlit
 requests
 beautifulsoup4
 gTTS
-moviepy==1.0.3
+moviepy
 Pillow
 numpy
 psutil
-imageio-ffmpeg==0.4.9
+imageio-ffmpeg
 imageio
