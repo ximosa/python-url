@@ -45,6 +45,7 @@ def limpiar_transcripcion_gemini(texto):
         Por favor, analiza y corrige el siguiente texto que es una transcripción de un video de Youtube.
         Asegúrate de que el texto tenga una gramática correcta, puntuación adecuada, respetando los puntos finales, comas y mayúsculas al principio de cada oración.
         Asegúrate de que el texto sea legible, coherente y fácil de entender.
+        El texto debe estar lo mas adaptado posible para IA de Text‐to‐Speech.
         Manten el contenido lo más fiel posible a la transcripción original.
 
         Transcripcion:
