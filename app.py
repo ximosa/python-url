@@ -14,8 +14,9 @@ def search_most_popular_music(limit=5):
             "--skip-download",
             f"ytsearch{limit}:top music"  # Término de búsqueda
         ]
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        result = subprocess.run(command, capture_output=True, text=True, check=False) #check=False
         output = result.stdout
+        stderr = result.stderr
         
         #Procesa la salida
         videos = []
@@ -25,7 +26,17 @@ def search_most_popular_music(limit=5):
                 videos.append(video_data)
             except json.JSONDecodeError:
                 st.error(f"Error al decodificar json: {line}")
-        return videos
+        
+        #Filtrar videos que dieron error
+        filtered_videos = []
+        for video in videos:
+            if f"Video unavailable. The uploader has not made this video available" in stderr:
+                if not stderr.find(video.get("id")) == -1:
+                     st.warning(f"El video {video.get('title')} no está disponible en tu pais")
+            else:
+                filtered_videos.append(video)
+        return filtered_videos
+
     except subprocess.CalledProcessError as e:
         st.error(f"Error al buscar en YouTube con yt-dlp: {e.stderr}")
         return []
@@ -144,12 +155,14 @@ def main():
     audio_links_data = []
     for video in search_results:
         video_url = f"https://www.youtube.com/watch?v={video['id']}"
-        audio_url, title = get_audio_link(video_url)
-        if audio_url:
-          audio_links_data.append({"title":title, "audio_url":audio_url})
-        else:
-          st.warning(f"No se pudo obtener el audio de: {video_url}")
-
+        try:
+            audio_url, title = get_audio_link(video_url)
+            if audio_url:
+                audio_links_data.append({"title":title, "audio_url":audio_url})
+            else:
+              st.warning(f"No se pudo obtener el audio de: {video_url}")
+        except Exception as e:
+            st.error(f"Error inesperado al procesar {video_url}: {e}")
 
     if not audio_links_data:
         st.warning("No se encontraron URLs de audio. Inténtalo de nuevo.")
