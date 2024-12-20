@@ -1,13 +1,10 @@
 streamlit
 requests
 beautifulsoup4
-spacy==3.7.2
 gTTS
 moviepy==1.0.3
 Pillow
 numpy==1.23.4
 psutil
-transformers
 imageio-ffmpeg==0.4.9
 imageio
-thinc==8.1.7
