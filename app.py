@@ -27,45 +27,33 @@ def procesar_texto_sin_ia(text):
     """Procesa el texto sin IA agregando puntuación avanzada."""
     # Eliminar saltos de línea
     text = re.sub(r'\n', ' ', text)
-     # Eliminar espacios en blanco redundantes
+    # Eliminar espacios en blanco redundantes
     text = re.sub(r'\s+', ' ', text).strip()
+
     # Patrones para dividir oraciones
     patterns = [
-        r'(,)\s+(y|o|pero|porque|aunque|sin embargo)\s+',  # Coma + conjunción
-        r'\b(cuando|mientras|después|antes|si)\b',        # Conjunciones de tiempo
-        r'(,)\s+que\s+', # Comas seguidas de "que"
-        r'(\.)\s+(y|o|pero|porque|aunque|sin embargo)\s+' #Punto seguido de conjuncion
+        r'(,)\s+(y|o|pero|porque|aunque|sin embargo)\s+',
+        r'\b(cuando|mientras|después|antes|si)\b',
+        r'(,)\s+que\s+',
+        r'(\.)\s+(y|o|pero|porque|aunque|sin embargo)\s+'
     ]
     for pattern in patterns:
          text = re.sub(pattern, r'\1 \2, ', text)
+    
     # Agregar comas después de frases introductorias
     text = re.sub(r'(en consecuencia|por lo tanto|además|sin embargo|en definitiva|por el contrario)\b', r'\1,', text, flags=re.IGNORECASE)
 
-     # Agregar comas antes de "que"
+    # Agregar comas antes de "que"
     text = re.sub(r'\s+(que)\s+', r', \1, ', text)
-    # Manejar enumeraciones (ej. "uno la vibración del...")
+   
+     # Manejar enumeraciones (ej. "uno la vibración del...")
     text = re.sub(r'(\b\d+\b)\s+la', r'\1, la', text)
 
-     # Agregar punto al final de las oraciones
+    # Agregar punto al final de las oraciones
     sentences = nltk.sent_tokenize(text, language='spanish')
     puntuated_sentences = [sentence.strip() + "." for sentence in sentences]
 
     return " ".join(puntuated_sentences)
-
-
-def dividir_transcripcion(text, max_chars=5000):
-    """Divide la transcripción en fragmentos más pequeños, por oracion."""
-    sentences = nltk.sent_tokenize(text, language='spanish')
-    fragments = []
-    current_fragment = ""
-    for sentence in sentences:
-        if len(current_fragment) + len(sentence) < max_chars:
-            current_fragment += sentence + " "
-        else:
-            fragments.append(current_fragment.strip())
-            current_fragment = sentence + " "
-    fragments.append(current_fragment.strip())
-    return fragments
 
 
 def crear_archivo_descarga(texto, filename="texto_mejorado.txt"):
@@ -81,18 +69,11 @@ def main():
     if texto_transcripcion:
       if st.button("Procesar Texto"):
         with st.spinner("Procesando Texto..."):
-            fragments = dividir_transcripcion(texto_transcripcion)
-            textos_procesados = []
-            for i, fragment in enumerate(fragments):
-                st.write(f"Procesando fragmento {i+1}/{len(fragments)}...")
-                texto_procesado = procesar_texto_sin_ia(fragment)
-                textos_procesados.append(texto_procesado)
-
-            texto_completo = "".join(textos_procesados)
+            texto_procesado = procesar_texto_sin_ia(texto_transcripcion)
             st.markdown("#### Transcripción Mejorada:")
-            st.write(texto_completo)
+            st.write(texto_procesado)
             st.markdown("#### Descargar como TXT:")
-            texto_descarga = crear_archivo_descarga(texto_completo)
+            texto_descarga = crear_archivo_descarga(texto_procesado)
             st.download_button(
                 label="Descargar TXT",
                 data=texto_descarga,
