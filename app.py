@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 import os
 from moviepy.editor import ImageSequenceClip, AudioFileClip
@@ -5,15 +6,22 @@ from bs4 import BeautifulSoup
 import requests
 import spacy
 from gtts import gTTS
-from transformers import pipeline
+# from transformers import pipeline # Comentado para evitar conflictos
 from PIL import Image, ImageDraw, ImageFont
 import time
 import subprocess
+import numpy as np
 
 # --- Configuración de spaCy ---
 MODEL_NAME = "es_core_news_sm"
 MODEL_INSTALLED = False
 
+EXPECTED_NUMPY_VERSION = "1.23.4" # Variable para verificar versión de numpy
+
+if np.__version__ != EXPECTED_NUMPY_VERSION:
+    st.error(f"¡Error! La versión de numpy no es la esperada. Streamlit Cloud tiene la versión {np.__version__}, se esperaba la versión {EXPECTED_NUMPY_VERSION}. Por favor, contacta a soporte o vuelve a intentar desplegar más tarde.")
+    st.stop()  # Detener la ejecución si la versión no es la correcta.
+    
 def descargar_modelo_spacy(model_name):
     """Descarga el modelo de spaCy si no está instalado."""
     try:
@@ -65,7 +73,7 @@ def obtener_contenido_web_mejorado(url):
         if nlp:
             docs = [nlp(item["texto"]) for item in textos_estructurados]
         else:
-            docs = []
+           docs = []
         return True, {
             "titulo": titulo,
             "textos_estructurados": textos_estructurados,
@@ -93,8 +101,8 @@ def descargar_imagenes(lista_urls, carpeta_destino):
                     for chunk in response.iter_content(chunk_size=8192):
                         archivo.write(chunk)
                 imagenes_descargadas.append(ruta_archivo)
-            except requests.exceptions.RequestException as e:
-                print(f"Error al descargar imagen {url}: {e}")
+        except requests.exceptions.RequestException as e:
+            print(f"Error al descargar imagen {url}: {e}")
         return True, imagenes_descargadas
     except Exception as e:
         return False, str(e)
@@ -107,13 +115,14 @@ def texto_a_voz_mejorado(texto, ruta_audio, idioma="es", velocidad=1.0, tono=0.0
     except Exception as e:
         return False, str(e)
 
-resumidor = pipeline("summarization")
+# resumidor = pipeline("summarization") # Eliminado para evitar problemas con torch
 def resumir_texto(texto, longitud_maxima=150):
-    try:
-        resumen = resumidor(texto, max_length=longitud_maxima, min_length=30)[0]['summary_text']
-        return True, resumen
-    except Exception as e:
-        return False, str(e)
+  return True, texto
+    # try:
+    #  resumen = resumidor(texto, max_length=longitud_maxima, min_length=30)[0]['summary_text']
+    #  return True, resumen
+    # except Exception as e:
+    #  return False, str(e)
 
 def crear_fotogramas_mejorado(textos, rutas_imagenes, carpeta_fotogramas):
     try:
@@ -142,16 +151,16 @@ def crear_fotogramas_mejorado(textos, rutas_imagenes, carpeta_fotogramas):
         return False, str(e)
 
 def reconstruir_video(ruta_fotogramas, ruta_audio, ruta_video_salida, fps=2):
-        try:
-            image_files = [os.path.join(ruta_fotogramas, img) for img in os.listdir(ruta_fotogramas) if img.endswith((".jpg", ".png"))]
-            image_files.sort()
-            clip = ImageSequenceClip(image_files, fps=fps)
-            audio = AudioFileClip(ruta_audio)
-            clip_con_audio = clip.set_audio(audio)
-            clip_con_audio.write_videofile(ruta_video_salida, codec="libx264")
-            return True, None
-        except Exception as e:
-            return False, str(e)
+    try:
+        image_files = [os.path.join(ruta_fotogramas, img) for img in os.listdir(ruta_fotogramas) if img.endswith((".jpg", ".png"))]
+        image_files.sort()
+        clip = ImageSequenceClip(image_files, fps=fps)
+        audio = AudioFileClip(ruta_audio)
+        clip_con_audio = clip.set_audio(audio)
+        clip_con_audio.write_videofile(ruta_video_salida, codec="libx264")
+        return True, None
+    except Exception as e:
+        return False, str(e)
 
 # --- Interfaz de Streamlit ---
 def main():
@@ -197,14 +206,14 @@ def main():
                     if exito_resumen:
                         textos_resumen.append(resumen)
                     else:
-                        textos_resumen.append(item["texto"]) # si no se puede resumir lo dejamos igual
+                        textos_resumen.append(item["texto"])
                 else:
                     textos_resumen.append(item["texto"])
             st.info("Creando audio a partir del texto...")
             texto_completo = " ".join(textos_resumen)
             exito_audio, error_audio = texto_a_voz_mejorado(texto_completo, ruta_audio)
             if exito_audio:
-                st.success("Audio creado.")
+               st.success("Audio creado.")
             else:
                st.error(f"Error creando audio: {error_audio}")
                return
@@ -214,22 +223,23 @@ def main():
             if exito_fotogramas:
                 st.success("Fotogramas creados.")
             else:
-               st.error(f"Error creando fotogramas: {error_fotogramas}")
-               return
+                st.error(f"Error creando fotogramas: {error_fotogramas}")
+                return
 
             st.info("Reconstruyendo video...")
             exito_reconstruir, error_reconstruir = reconstruir_video(ruta_fotogramas, ruta_audio, ruta_video_salida)
             if exito_reconstruir:
-               st.success("Video creado!")
-               with open(ruta_video_salida, "rb") as file:
-                   btn = st.download_button(
-                       label="Descargar Video",
-                       data=file,
-                       file_name="video_web.mp4",
-                       mime="video/mp4"
-                   )
+                st.success("Video creado!")
+                with open(ruta_video_salida, "rb") as file:
+                    btn = st.download_button(
+                        label="Descargar Video",
+                        data=file,
+                        file_name="video_web.mp4",
+                        mime="video/mp4"
+                    )
             else:
                 st.error(f"Error reconstruyendo video: {error_reconstruir}")
 
 if __name__ == "__main__":
     main()
+```
