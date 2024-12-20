@@ -12,4 +12,3 @@ torch
 imageio-ffmpeg==0.4.9
 imageio
 -e .
-spacy
