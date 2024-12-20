@@ -17,10 +17,11 @@ def download_nltk_data():
     else:
         ssl._create_default_https_context = _create_unverified_https_context
     try:
-        nltk.data.find("tokenizers/punkt")
+        nltk.data.find("tokenizers/punkt_tab/spanish")
     except LookupError:
         st.write("Descargando los datos de nltk...")
         nltk.download('punkt', quiet=True)
+        nltk.download('punkt_tab', quiet=True) # descargar punkt_tab
         st.success("Datos de NLTK descargados con éxito!")
     
 # Descargar los datos de nltk al inicio
