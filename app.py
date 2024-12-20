@@ -1,37 +1,77 @@
 import streamlit as st
-import re
+import google.generativeai as genai
+import os
+import textwrap
 
-def limpiar_transcripcion(texto):
+# Obtener la API Key de los secretos de Streamlit
+try:
+    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+    genai.configure(api_key=GOOGLE_API_KEY)
+    MODEL = "gemini-pro"
+except KeyError:
+    st.error("La API Key de Gemini no está configurada en los secretos de Streamlit.")
+    st.stop() # Detener la app si no hay API Key
+
+def dividir_texto(texto, max_tokens=2000):
+    """Divide el texto en fragmentos más pequeños."""
+    tokens = texto.split()
+    fragmentos = []
+    fragmento_actual = []
+    cuenta_tokens = 0
+
+    for token in tokens:
+        cuenta_tokens += 1
+        if cuenta_tokens <= max_tokens:
+            fragmento_actual.append(token)
+        else:
+            fragmentos.append(" ".join(fragmento_actual))
+            fragmento_actual = [token]
+            cuenta_tokens = 1
+    if fragmento_actual:
+        fragmentos.append(" ".join(fragmento_actual))
+    return fragmentos
+
+def limpiar_transcripcion_gemini(texto):
     """
-    Limpia y formatea una transcripción de YouTube.
+    Limpia una transcripción usando Gemini.
 
     Args:
-        texto (str): La transcripción sin formato.
+      texto (str): La transcripción sin formato.
 
     Returns:
-        str: La transcripción formateada para mejor lectura.
+      str: La transcripción formateada.
     """
+    prompt = f"""
+        Por favor, analiza y corrige el siguiente texto que es una transcripción de un video de Youtube.
+        Asegúrate de que el texto tenga una gramática correcta, puntuación adecuada, respetando los puntos finales, comas y mayúsculas al principio de cada oración.
+        Asegúrate de que el texto sea legible, coherente y fácil de entender.
+        Manten el contenido lo más fiel posible a la transcripción original.
 
-    # 1. Eliminar saltos de línea redundantes y espacios extra
-    texto = re.sub(r'\s+', ' ', texto).strip()
+        Transcripcion:
+        {texto}
 
-    # 2. Separar oraciones por puntos (si no los tienen)
-    # Asumimos que después de una mayúscula seguida de una palabra y espacio, sigue una nueva oración
-    texto = re.sub(r'([A-Z][a-z\s]*)\s', r'\1. ', texto)
-    
-    # 3. Corregir puntos al final de frases con comas
-    texto = re.sub(r'\.\,', ',', texto)
-    
-     # 4. Corregir espacios antes de los puntos
-    texto = re.sub(r'\s+\.', '.', texto)
+        Texto corregido:
+    """
+    try:
+        model = genai.GenerativeModel(MODEL)
+        response = model.generate_content(prompt)
+        return response.text
 
-    # 5. Capitalizar la primera letra de la primera oración
-    if texto:
-         texto = texto[0].upper() + texto[1:]
-    # 6. Capitalizar la primera letra después de un punto
-    texto = re.sub(r'\. ([a-z])', lambda m: '. ' + m.group(1).upper(), texto)
+    except Exception as e:
+        st.error(f"Error al procesar con Gemini: {e}")
+        return None
 
-    return texto
+
+def procesar_transcripcion(texto):
+    """Procesa el texto dividiendo en fragmentos y usando Gemini."""
+    fragmentos = dividir_texto(texto)
+    texto_limpio_completo = ""
+    for i, fragmento in enumerate(fragmentos):
+        st.write(f"Procesando fragmento {i+1}/{len(fragmentos)}")
+        texto_limpio = limpiar_transcripcion_gemini(fragmento)
+        if texto_limpio:
+            texto_limpio_completo += texto_limpio + " " # Agregar espacio para evitar que las frases se unan
+    return texto_limpio_completo.strip()
 
 def descargar_texto(texto_formateado):
     """
@@ -50,12 +90,14 @@ def descargar_texto(texto_formateado):
         mime="text/plain"
     )
 
-st.title("Limpiador de Transcripciones de YouTube")
+st.title("Limpiador de Transcripciones de YouTube (con Gemini)")
 
 transcripcion = st.text_area("Pega aquí tu transcripción sin formato:")
 
 if transcripcion:
-    texto_limpio = limpiar_transcripcion(transcripcion)
-    st.subheader("Transcripción Formateada:")
-    st.write(texto_limpio)
-    descargar_texto(texto_limpio)
+    with st.spinner("Procesando con Gemini..."):
+        texto_limpio = procesar_transcripcion(transcripcion)
+        if texto_limpio:
+            st.subheader("Transcripción Formateada:")
+            st.write(texto_limpio)
+            descargar_texto(texto_limpio)
