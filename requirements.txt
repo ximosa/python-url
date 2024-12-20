@@ -12,4 +12,4 @@ torch
 imageio-ffmpeg==0.4.9
 imageio
 -e .
-spacy download es_core_news_sm
+spacy
