@@ -63,9 +63,9 @@ def obtener_contenido_web_mejorado(url):
                 textos_estructurados.append({"tipo": tipo_elemento, "texto": text})
         imagenes = [img['src'] for img in soup.find_all('img') if 'src' in img.attrs]
         if nlp:
-          docs = [nlp(item["texto"]) for item in textos_estructurados]
+            docs = [nlp(item["texto"]) for item in textos_estructurados]
         else:
-          docs = []
+            docs = []
         return True, {
             "titulo": titulo,
             "textos_estructurados": textos_estructurados,
@@ -76,7 +76,7 @@ def obtener_contenido_web_mejorado(url):
         return False, str(e)
     except Exception as e:
         return False, str(e)
-    
+
 def descargar_imagenes(lista_urls, carpeta_destino):
     try:
         imagenes_descargadas = []
@@ -110,39 +110,39 @@ def texto_a_voz_mejorado(texto, ruta_audio, idioma="es", velocidad=1.0, tono=0.0
 resumidor = pipeline("summarization")
 def resumir_texto(texto, longitud_maxima=150):
     try:
-      resumen = resumidor(texto, max_length=longitud_maxima, min_length=30)[0]['summary_text']
-      return True, resumen
+        resumen = resumidor(texto, max_length=longitud_maxima, min_length=30)[0]['summary_text']
+        return True, resumen
     except Exception as e:
-      return False, str(e)
-      
+        return False, str(e)
+
 def crear_fotogramas_mejorado(textos, rutas_imagenes, carpeta_fotogramas):
-  try:
-    imagenes_generadas = []
-    for i, texto in enumerate(textos):
-        img = Image.new('RGB', (800, 600), color=(255, 255, 255))
-        d = ImageDraw.Draw(img)
-        font = ImageFont.truetype('arial.ttf', size=30)
+    try:
+        imagenes_generadas = []
+        for i, texto in enumerate(textos):
+            img = Image.new('RGB', (800, 600), color=(255, 255, 255))
+            d = ImageDraw.Draw(img)
+            font = ImageFont.truetype('arial.ttf', size=30)
 
-        d.text((50, 50), texto, fill=(0, 0, 0), font=font)
+            d.text((50, 50), texto, fill=(0, 0, 0), font=font)
 
-        if i < len(rutas_imagenes):
-            try:
-                imagen_web = Image.open(rutas_imagenes[i])
-                imagen_web.thumbnail((200,200))
-                img.paste(imagen_web, (400, 200))
-            except:
-                pass # si no se puede, no pasa nada
+            if i < len(rutas_imagenes):
+                try:
+                    imagen_web = Image.open(rutas_imagenes[i])
+                    imagen_web.thumbnail((200,200))
+                    img.paste(imagen_web, (400, 200))
+                except:
+                    pass # si no se puede, no pasa nada
 
-        nombre_archivo = f"frame_{i:04d}.png"
-        ruta_archivo = os.path.join(carpeta_fotogramas, nombre_archivo)
-        img.save(ruta_archivo)
-        imagenes_generadas.append(ruta_archivo)
-    return True, imagenes_generadas
-  except Exception as e:
-      return False, str(e)
+            nombre_archivo = f"frame_{i:04d}.png"
+            ruta_archivo = os.path.join(carpeta_fotogramas, nombre_archivo)
+            img.save(ruta_archivo)
+            imagenes_generadas.append(ruta_archivo)
+        return True, imagenes_generadas
+    except Exception as e:
+        return False, str(e)
 
 def reconstruir_video(ruta_fotogramas, ruta_audio, ruta_video_salida, fps=2):
-          try:
+        try:
             image_files = [os.path.join(ruta_fotogramas, img) for img in os.listdir(ruta_fotogramas) if img.endswith((".jpg", ".png"))]
             image_files.sort()
             clip = ImageSequenceClip(image_files, fps=fps)
@@ -150,7 +150,7 @@ def reconstruir_video(ruta_fotogramas, ruta_audio, ruta_video_salida, fps=2):
             clip_con_audio = clip.set_audio(audio)
             clip_con_audio.write_videofile(ruta_video_salida, codec="libx264")
             return True, None
-          except Exception as e:
+        except Exception as e:
             return False, str(e)
 
 # --- Interfaz de Streamlit ---
@@ -184,7 +184,7 @@ def main():
             st.info("Descargando imagenes...")
             exito, rutas_imagenes = descargar_imagenes(contenido["imagenes"], ruta_imagenes_web)
             if exito:
-               st.success("Imagenes descargadas.")
+                st.success("Imagenes descargadas.")
             else:
                 st.error(f"Error descargando imágenes: {rutas_imagenes}")
                 return
@@ -193,11 +193,11 @@ def main():
             textos_resumen = []
             for item in contenido["textos_estructurados"]:
                 if item["tipo"] == "p":
-                  exito_resumen, resumen = resumir_texto(item["texto"])
-                  if exito_resumen:
-                      textos_resumen.append(resumen)
-                  else:
-                      textos_resumen.append(item["texto"]) # si no se puede resumir lo dejamos igual
+                    exito_resumen, resumen = resumir_texto(item["texto"])
+                    if exito_resumen:
+                        textos_resumen.append(resumen)
+                    else:
+                        textos_resumen.append(item["texto"]) # si no se puede resumir lo dejamos igual
                 else:
                     textos_resumen.append(item["texto"])
             st.info("Creando audio a partir del texto...")
@@ -212,11 +212,11 @@ def main():
             st.info("Creando fotogramas...")
             exito_fotogramas, error_fotogramas = crear_fotogramas_mejorado(textos_resumen, rutas_imagenes, ruta_fotogramas)
             if exito_fotogramas:
-               st.success("Fotogramas creados.")
+                st.success("Fotogramas creados.")
             else:
                st.error(f"Error creando fotogramas: {error_fotogramas}")
                return
-            
+
             st.info("Reconstruyendo video...")
             exito_reconstruir, error_reconstruir = reconstruir_video(ruta_fotogramas, ruta_audio, ruta_video_salida)
             if exito_reconstruir:
