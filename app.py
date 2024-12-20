@@ -35,6 +35,8 @@ def mejorar_texto_gemini(text):
     Agrega puntuación (comas, puntos, etc.), crea oraciones claras y breves,
     y considera el flujo natural de la lectura.
     Devuelve SOLO el texto mejorado, sin incluir ningún texto adicional.
+
+    Transcripción:
     
     {text}
     """
@@ -44,9 +46,14 @@ def mejorar_texto_gemini(text):
 
 def eliminar_prompt(text):
     """Elimina el texto del prompt del resultado."""
-    prompt_text = "Por favor, mejora la siguiente transcripción para que sea más adecuada para un lector de voz. Agrega puntuación (comas, puntos, etc.), crea oraciones claras y breves, y considera el flujo natural de la lectura. Devuelve SOLO el texto mejorado, sin incluir ningún texto adicional. Transcripción:"
-    cleaned_text = re.sub(re.escape(prompt_text), '', text, flags=re.IGNORECASE).strip()
+    # Expresión regular para detectar el inicio del prompt
+    prompt_pattern = r"^(.*?)Por favor, mejora la siguiente transcripción para que sea más adecuada para un lector de voz\. Agrega puntuación \(comas, puntos, etc.\), crea oraciones claras y breves, y considera el flujo natural de la lectura\. Devuelve SOLO el texto mejorado, sin incluir ningún texto adicional\. Transcripción:"
+    cleaned_text = re.sub(prompt_pattern, '', text, flags=re.IGNORECASE).strip()
     return cleaned_text
+
+def eliminar_texto_extra(text):
+     text = re.sub(r"Texto mejorado, ", "", text).strip()
+     return text
 
 def dividir_transcripcion(text, max_chars=5000):
     """Divide la transcripción en fragmentos más pequeños, por oracion."""
@@ -79,11 +86,12 @@ def main():
           fragments = dividir_transcripcion(texto_transcripcion)
           textos_mejorados = []
           for i, fragment in enumerate(fragments):
-            st.write(f"Procesando fragmento {i+1}/{len(fragments)}...")
-            texto_mejorado = mejorar_texto_gemini(fragment)
-            texto_mejorado = re.sub(r'\*','', texto_mejorado)  # Eliminar asteriscos
-            texto_mejorado = eliminar_prompt(texto_mejorado) # Eliminar el prompt
-            textos_mejorados.append(texto_mejorado)
+             st.write(f"Procesando fragmento {i+1}/{len(fragments)}...")
+             texto_mejorado = mejorar_texto_gemini(fragment)
+             texto_mejorado = re.sub(r'\*','', texto_mejorado)
+             texto_mejorado = eliminar_prompt(texto_mejorado)
+             texto_mejorado = eliminar_texto_extra(texto_mejorado) # Eliminar texto extra "Texto mejorado"
+             textos_mejorados.append(texto_mejorado)
           texto_completo = " ".join(textos_mejorados)
           st.markdown("#### Transcripción Mejorada:")
           st.write(texto_completo)
