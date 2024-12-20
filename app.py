@@ -40,7 +40,7 @@ def get_audio_link(video_url):
             "yt-dlp",
             "--dump-json",
             "--skip-download",
-            "--format", "bestaudio[ext=mp4]",
+            "--format", "bestaudio", # No forzar extension
             video_url
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
@@ -67,7 +67,7 @@ def create_download_link(audio_url, filename):
             "yt-dlp",
             "--print",
             "url",
-             "--format", "bestaudio[ext=mp4]",
+            "--format", "bestaudio", # No forzar extension
             audio_url
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
@@ -77,7 +77,7 @@ def create_download_link(audio_url, filename):
              "yt-dlp",
             "--print",
             "url",
-            "--format", "bestaudio[ext=mp4]",
+            "--format", "bestaudio", # No forzar extension
             audio_url
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
@@ -87,14 +87,14 @@ def create_download_link(audio_url, filename):
               "yt-dlp",
               "--print",
               "url",
-             "--format", "bestaudio[ext=mp4]",
+            "--format", "bestaudio", # No forzar extension
              audio_url_final
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         
         command = [
             "yt-dlp",
-            "--format", "bestaudio[ext=mp4]",
+            "--format", "bestaudio", # No forzar extension
             "-o", "-", #Imprime la descarga en stdout
            audio_url_final
         ]
@@ -103,7 +103,7 @@ def create_download_link(audio_url, filename):
         stdout, stderr = process.communicate()
 
         if process.returncode != 0:
-            raise Exception(f"yt-dlp download failed with error: {stderr.decode('utf-8')}")
+            st.error(f"yt-dlp download failed: {stderr.decode('utf-8')}")
             return None
 
         buffer = BytesIO(stdout)
@@ -111,8 +111,8 @@ def create_download_link(audio_url, filename):
         href = f'<a href="data:audio/mp4;base64,{b64}" download="{filename}.mp4">Descargar</a>'
         return href
     except subprocess.CalledProcessError as e:
-            st.error(f"Error al crear link de descarga: {e.stderr}")
-            return None
+        st.error(f"Error al crear link de descarga, puede que el formato de audio no esté disponible {e.stderr}")
+        return None
     except Exception as e:
         st.error(f"Error al crear link de descarga: {e}")
         return None
