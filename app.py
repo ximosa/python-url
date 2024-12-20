@@ -42,6 +42,11 @@ def mejorar_texto_gemini(text):
     response = model.generate_content(prompt)
     return response.text.strip()
 
+def eliminar_prompt(text):
+    """Elimina el texto del prompt del resultado."""
+    prompt_text = "Por favor, mejora la siguiente transcripción para que sea más adecuada para un lector de voz. Agrega puntuación (comas, puntos, etc.), crea oraciones claras y breves, y considera el flujo natural de la lectura. Devuelve SOLO el texto mejorado, sin incluir ningún texto adicional. Transcripción:"
+    cleaned_text = re.sub(re.escape(prompt_text), '', text, flags=re.IGNORECASE).strip()
+    return cleaned_text
 
 def dividir_transcripcion(text, max_chars=5000):
     """Divide la transcripción en fragmentos más pequeños, por oracion."""
@@ -77,6 +82,7 @@ def main():
             st.write(f"Procesando fragmento {i+1}/{len(fragments)}...")
             texto_mejorado = mejorar_texto_gemini(fragment)
             texto_mejorado = re.sub(r'\*','', texto_mejorado)  # Eliminar asteriscos
+            texto_mejorado = eliminar_prompt(texto_mejorado) # Eliminar el prompt
             textos_mejorados.append(texto_mejorado)
           texto_completo = " ".join(textos_mejorados)
           st.markdown("#### Transcripción Mejorada:")
