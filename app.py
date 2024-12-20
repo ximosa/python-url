@@ -24,15 +24,34 @@ def download_nltk_data():
 download_nltk_data()
 
 def procesar_texto_sin_ia(text):
-    """Procesa el texto sin IA agregando puntuación básica."""
+    """Procesa el texto sin IA agregando puntuación avanzada."""
+    # Eliminar saltos de línea
+    text = re.sub(r'\n', ' ', text)
+     # Eliminar espacios en blanco redundantes
+    text = re.sub(r'\s+', ' ', text).strip()
+    # Patrones para dividir oraciones
+    patterns = [
+        r'(,)\s+(y|o|pero|porque|aunque|sin embargo)\s+',  # Coma + conjunción
+        r'\b(cuando|mientras|después|antes|si)\b',        # Conjunciones de tiempo
+        r'(,)\s+que\s+', # Comas seguidas de "que"
+        r'(\.)\s+(y|o|pero|porque|aunque|sin embargo)\s+' #Punto seguido de conjuncion
+    ]
+    for pattern in patterns:
+         text = re.sub(pattern, r'\1 \2, ', text)
+    # Agregar comas después de frases introductorias
+    text = re.sub(r'(en consecuencia|por lo tanto|además|sin embargo|en definitiva|por el contrario)\b', r'\1,', text, flags=re.IGNORECASE)
+
+     # Agregar comas antes de "que"
+    text = re.sub(r'\s+(que)\s+', r', \1, ', text)
+    # Manejar enumeraciones (ej. "uno la vibración del...")
+    text = re.sub(r'(\b\d+\b)\s+la', r'\1, la', text)
+
+     # Agregar punto al final de las oraciones
     sentences = nltk.sent_tokenize(text, language='spanish')
-    puntuated_sentences = []
-    for sentence in sentences:
-         sentence = re.sub(r'\s+', ' ', sentence).strip() # Limpiar espacios
-         sentence = re.sub(r',(\s+)(y|o|pero)\b', r', \2', sentence) # espacios después de las comas
-         sentence = re.sub(r'\b(y|o|pero)\b', r', \1', sentence).strip() # comas después de conjunciones
-         puntuated_sentences.append(sentence + ".")
+    puntuated_sentences = [sentence.strip() + "." for sentence in sentences]
+
     return " ".join(puntuated_sentences)
+
 
 def dividir_transcripcion(text, max_chars=5000):
     """Divide la transcripción en fragmentos más pequeños, por oracion."""
