@@ -6,7 +6,7 @@ import base64
 def search_most_popular_music(limit=5):
     """Busca la música más popular en YouTube."""
     try:
-        s = Search("top music") #esto se puede cambiar
+        s = Search("top music")
         results = s.results[:limit]
         return results
     except Exception as e:
@@ -17,8 +17,17 @@ def get_audio_link(video_url):
     """Obtiene el link de audio de un video de YouTube."""
     try:
         yt = YouTube(video_url)
+        # Primero intentar obtener el stream con mejor calidad
+        audio_stream = yt.streams.filter(only_audio=True, file_extension="mp4").order_by('abr').desc().first()
+        if audio_stream:
+             return audio_stream.url, yt.title
+        # Si no se encuentra un stream de alta calidad, buscar cualquiera
         audio_stream = yt.streams.filter(only_audio=True).first()
-        return audio_stream.url, yt.title
+        if audio_stream:
+            return audio_stream.url, yt.title
+        else:
+             st.error(f"No se encontró stream de audio para {video_url}")
+             return None, None
     except Exception as e:
         st.error(f"Error al obtener el audio de {video_url}: {e}")
         return None, None
@@ -67,6 +76,9 @@ def main():
        audio_url, title= get_audio_link(f"https://www.youtube.com/watch?v={video.video_id}")
        if audio_url:
           audio_links_data.append({"title":title, "audio_url":audio_url})
+       else:
+           st.warning(f"No se pudo obtener el audio de: https://www.youtube.com/watch?v={video.video_id}")
+
 
     if not audio_links_data:
         st.warning("No se encontraron URLs de audio. Inténtalo de nuevo.")
