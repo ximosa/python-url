@@ -44,6 +44,7 @@ def limpiar_transcripcion_gemini(texto):
     prompt = f"""
        Actúa como un lector profundo y reflexivo. Escribe un resumen conciso y coherente del texto en primera persona, como si tú hubieras vivido la experiencia o reflexionado sobre los temas presentados.
     Sigue estas pautas:
+    - Dale un titulo preciso y llamativo.
     - Evita mencionar nombres de personajes o del autor.
     - Concentra el resumen en la experiencia general, las ideas principales, los temas y las emociones transmitidas por el texto.
     - Utiliza un lenguaje evocador y personal, como si estuvieras compartiendo tus propias conclusiones tras una profunda reflexión.
