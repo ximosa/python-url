@@ -42,13 +42,16 @@ def limpiar_transcripcion_gemini(texto):
       str: La transcripción formateada.
     """
     prompt = f"""
-        Por favor, analiza y corrige el siguiente texto que es una transcripción de un video de Youtube.
-        Asegúrate de que el texto tenga una gramática correcta, puntuación adecuada, respetando los puntos finales, comas y mayúsculas al principio de cada oración.
-        Asegúrate de que el texto sea legible, coherente y fácil de entender.
-        El texto debe estar lo mas adaptado posible para IA de Text‐to‐Speech.
-        Manten el contenido lo más fiel posible a la transcripción original.
-
-        Transcripcion:
+       Actúa como un lector profundo y reflexivo. Escribe un resumen conciso y coherente del texto en primera persona, como si tú hubieras vivido la experiencia o reflexionado sobre los temas presentados.
+    Sigue estas pautas:
+    - Evita mencionar nombres de personajes o del autor.
+    - Concentra el resumen en la experiencia general, las ideas principales, los temas y las emociones transmitidas por el texto.
+    - Utiliza un lenguaje evocador y personal, como si estuvieras compartiendo tus propias conclusiones tras una profunda reflexión.
+    - No uses nombres propios ni nombres de lugares específicos, refiérete a ellos como "un lugar", "una persona", "otro personaje", etc.
+    - Usa un lenguaje claro y directo
+    - Escribe como si estuvieras narrando una historia
+    - Separa ideas solo con puntos y comas
+    -Importante, el texto debe adaptarse para que el lector de voz de google lo lea lo mejor posible
         {texto}
 
         Texto corregido:
