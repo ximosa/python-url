@@ -42,7 +42,7 @@ def limpiar_transcripcion_gemini(texto):
       str: La transcripción formateada.
     """
     prompt = f"""
-       Actúa como un lector profundo y reflexivo. Escribe un resumen conciso y coherente del texto en primera persona, como si tú hubieras vivido la experiencia o reflexionado sobre los temas presentados.
+       Actúa como un lector profundo y reflexivo. Escribe un resumen lo más amplio conciso y coherente del texto en primera persona, como si tú hubieras vivido la experiencia o reflexionado sobre los temas presentados.
     Sigue estas pautas:
     - Dale un titulo preciso y llamativo.
     - Evita mencionar nombres de personajes o del autor.
