@@ -50,7 +50,7 @@ def limpiar_transcripcion_gemini(texto):
     - No uses nombres propios ni nombres de lugares específicos, refiérete a ellos como "un lugar", "una persona", "otro personaje", etc.
     - Usa un lenguaje claro y directo
     - Escribe como si estuvieras narrando una historia
-    - Separa ideas solo con puntos y comas
+    - Evita los asteriscos en el texto, dame tan solo el texto sin encabezados ni texto en negrita
     -Importante, el texto debe adaptarse para que el lector de voz de google lo lea lo mejor posible
         {texto}
 
