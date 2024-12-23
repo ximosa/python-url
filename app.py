@@ -5,11 +5,11 @@ import textwrap
 
 # Obtener la API Key de las variables de entorno
 try:
-    GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+    GOOGLE_API_KEY = os.environ["_GOOGLE_API_KEY"]
     genai.configure(api_key=GOOGLE_API_KEY)
     MODEL = "gemini-pro"
 except KeyError:
-    st.error("La variable de entorno GOOGLE_API_KEY no está configurada.")
+    st.error("La variable de entorno _GOOGLE_API_KEY no está configurada.")
     st.stop() # Detener la app si no hay API Key
 
 def dividir_texto(texto, max_tokens=2000):
