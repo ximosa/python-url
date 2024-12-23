@@ -5,7 +5,7 @@ import textwrap
 
 # Obtener la API Key de las variables de entorno
 try:
-    GOOGLE_API_KEY = os.environ["_GOOGLE_API_KEY"]
+    GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
     genai.configure(api_key=GOOGLE_API_KEY)
     MODEL = "gemini-pro"
 except KeyError:
