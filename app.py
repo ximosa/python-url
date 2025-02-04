@@ -42,7 +42,7 @@ def limpiar_transcripcion_gemini(texto, iteracion=1):
 
     if iteracion == 1:
         prompt = f"""
-        Actúa como un redactor y narrador experto, con un estilo conversacional, cercano y atractivo.  Imagina que estás adaptando un guion para un podcast o un audiolibro, buscando hacerlo más natural y cautivador.
+        Actúa como un redactor y narrador experto, con un estilo conversacional, cercano y atractivo.  Imagina que estás adaptando un guion para una audencia en un auditorio repleto de personas, buscando hacerlo más natural y cautivador.
 
         Sigue estas instrucciones con precisión:
 
@@ -65,7 +65,7 @@ def limpiar_transcripcion_gemini(texto, iteracion=1):
 
     else:
         prompt = f"""
-            Actúa como un editor de audiolibros, revisando un borrador para pulirlo y maximizar su impacto en el oyente. Tu objetivo es refinar el texto existente, haciéndolo aún más natural, atractivo y envolvente.
+            Actúa como un coferenciante en un auditorio repleto de personas, revisando un borrador para pulirlo y maximizar su impacto en el oyente. Tu objetivo es refinar el texto existente, haciéndolo aún más natural, atractivo y envolvente.
 
             Sigue estas pautas con atención:
 
@@ -76,7 +76,7 @@ def limpiar_transcripcion_gemini(texto, iteracion=1):
             - **Optimiza para la escucha:** Presta especial atención al ritmo, la fluidez y la claridad del texto. Asegúrate de que sea agradable y fácil de seguir para el oído.
             - **Evita la repetición y la redundancia:** Identifica y elimina cualquier palabra, frase o idea que se repita innecesariamente.
             - **Mantén la coherencia y la cohesión:** Asegúrate de que todas las partes del texto encajen entre sí y fluyan de forma lógica, creando una experiencia auditiva fluida y armoniosa.
-            - **Evita fórmulas repetitivas y clichés:** **Específicamente, evita el uso de frases como "querido amigo" o cualquier otra fórmula de saludo similar.** Busca formas más originales y naturales de conectar con el oyente.
+            - **Evita nombres propios y alusión a personas:** **Específicamente, evita el uso de frases como "querido amigo" o cualquier otra fórmula de saludo similar.** Busca formas más originales y naturales de conectar con el oyente.
 
             Aquí está el texto que debes refinar:
 
