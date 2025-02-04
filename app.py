@@ -38,28 +38,36 @@ def dividir_texto(texto, max_tokens=3500):
 
 
 def limpiar_transcripcion_gemini(texto):
-    """Limpia una transcripción usando Gemini, y genera títulos llamativos."""
+    """Limpia una transcripción usando Gemini, y genera títulos llamativos, *separados* del texto principal."""
 
     prompt = f"""
-    Actúa como un redactor, narrador y experto en SEO para YouTube, con un estilo conversacional, cercano y atractivo. Imagina que estás adaptando un guion para un video de YouTube, buscando hacerlo más natural y cautivador, y generando títulos atractivos.
+    Actúa como un redactor y narrador experto, con un estilo conversacional, cercano y atractivo. Imagina que estás adaptando un guion para una lectura en voz alta ante una audiencia, buscando hacerlo más natural y cautivador. Además, necesitas generar títulos llamativos para promocionar la lectura en YouTube.
 
     Sigue estas instrucciones con precisión:
 
-    - **Parafrasea, expande y enriquece el texto:** No te limites a reescribir; profundiza en las ideas, añade detalles, ejemplos, analogías y reflexiones personales. El texto resultante debe ser sustancialmente más extenso que el original.
-    - **Mantén un tono conversacional y cercano:** Escribe como si estuvieras hablando directamente a un oyente, utilizando un lenguaje claro, sencillo y accesible. Evita la jerga técnica o el lenguaje formal.
-    - **Elimina cualquier referencia directa:** Evita nombres propios, lugares específicos o menciones directas al autor original. Utiliza referencias genéricas como "una persona", "un lugar", "otro personaje", etc.
-    - **Concéntrate en la experiencia y las emociones:** Transmite las sensaciones, las ideas y las reflexiones que el texto original te inspiró.
-    - **Adopta un estilo narrativo cautivador:** Escribe como si estuvieras contando una historia, utilizando descripciones vívidas y un ritmo que mantenga al oyente enganchado.
-    - **Evita fórmulas repetitivas y clichés:** Evita frases como "querido amigo".
-    - **Optimiza para la escucha:** Utiliza frases cortas, párrafos concisos y una puntuación clara.
-    - **Genera 5 títulos llamativos para YouTube:** Deben ser concisos, atractivos y optimizados para SEO. Incluye palabras clave relevantes y elementos que inciten al clic. Enumera los títulos del 1 al 5.
-    - **Entrega primero los 5 títulos en formato de lista enumerada, y luego el texto transformado.** Sin encabezados, negritas, ni formato adicional.
+    1.  **Texto Naturalizado:**
+        *   Parafrasea, expande y enriquece el texto original. Profundiza en las ideas, añade detalles, ejemplos, analogías y reflexiones personales. El texto resultante debe ser sustancialmente más extenso que el original.
+        *   Mantén un tono conversacional y cercano. Escribe como si estuvieras hablando directamente a un oyente, utilizando un lenguaje claro, sencillo y accesible. Evita la jerga técnica o el lenguaje formal.
+        *   Elimina cualquier referencia directa: Evita nombres propios, lugares específicos o menciones directas al autor original. Utiliza referencias genéricas como "una persona", "un lugar", "otro personaje", etc.
+        *   Concéntrate en la experiencia y las emociones: Transmite las sensaciones, las ideas y las reflexiones que el texto original te inspiró.
+        *   Adopta un estilo narrativo cautivador: Escribe como si estuvieras contando una historia, utilizando descripciones vívidas y un ritmo que mantenga al oyente enganchado.
+        *   Evita fórmulas repetitivas y clichés: Evita frases como "querido amigo".
+        *   Optimiza para la escucha: Utiliza frases cortas, párrafos concisos y una puntuación clara.
+        *   **Importante:** NO incluyas ningún título, encabezado o lista dentro del texto naturalizado. Este texto debe ser fluido y continuo, listo para ser leído en voz alta.
+
+    2.  **Títulos para YouTube (Separados):**
+        *   Genera 5 títulos llamativos y concisos para un video de YouTube que promocione esta lectura en voz alta.
+        *   Estos títulos deben ser atractivos, optimizados para SEO e incluir palabras clave relevantes y elementos que inciten al clic (por ejemplo, preguntas, números, promesas).
+
+    3.  **Formato de la Respuesta:**
+        *   Primero, entrega el texto naturalizado completo.
+        *   Después, en una sección completamente separada, lista los 5 títulos para YouTube, numerados del 1 al 5.
 
     Aquí está el texto que debes transformar:
 
     {texto}
 
-    Lista de títulos:
+    Texto Naturalizado:
     """
 
     try:
@@ -67,9 +75,10 @@ def limpiar_transcripcion_gemini(texto):
         response = model.generate_content(prompt)
         full_text = response.text
 
-        # Separar los títulos del texto principal
+        # Separar el texto naturalizado de los títulos
         try:
-            titulos_texto, texto_transformado = full_text.split("Texto transformado:", 1)
+            texto_transformado, titulos_texto = full_text.split("Títulos para YouTube (Separados):", 1)
+            texto_transformado = texto_transformado.replace("Texto Naturalizado:", "").strip() # Eliminar el encabezado y espacios
 
             # Limpiar los títulos y convertirlos en una lista
             titulos = [t.strip() for t in titulos_texto.split('\n') if t.strip() and t.strip()[0].isdigit()]
