@@ -2,18 +2,21 @@ import streamlit as st
 import google.generativeai as genai
 import os
 import textwrap
+
 st.set_page_config(
     page_title="texto-corto",
     layout="wide"
 )
+
 # Obtener la API Key de las variables de entorno
 try:
     GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
     genai.configure(api_key=GOOGLE_API_KEY)
     MODEL = "gemini-pro"
 except KeyError:
-    st.error("La variable de entorno _GOOGLE_API_KEY no está configurada.")
-    st.stop() # Detener la app si no hay API Key
+    st.error("La variable de entorno GOOGLE_API_KEY no está configurada.")
+    st.stop()  # Detener la app si no hay API Key
+
 
 def dividir_texto(texto, max_tokens=4500):
     """Divide el texto en fragmentos más pequeños."""
@@ -33,6 +36,7 @@ def dividir_texto(texto, max_tokens=4500):
     if fragmento_actual:
         fragmentos.append(" ".join(fragmento_actual))
     return fragmentos
+
 
 def limpiar_transcripcion_gemini(texto):
     """
@@ -78,11 +82,12 @@ def procesar_transcripcion(texto):
     fragmentos = dividir_texto(texto)
     texto_limpio_completo = ""
     for i, fragmento in enumerate(fragmentos):
-        st.write(f"Procesando fragmento {i+1}/{len(fragmentos)}")
+        st.write(f"Procesando fragmento {i + 1}/{len(fragmentos)}")
         texto_limpio = limpiar_transcripcion_gemini(fragmento)
         if texto_limpio:
-            texto_limpio_completo += texto_limpio + " " # Agregar espacio para evitar que las frases se unan
+            texto_limpio_completo += texto_limpio + " "  # Agregar espacio para evitar que las frases se unan
     return texto_limpio_completo.strip()
+
 
 def descargar_texto(texto_formateado):
     """
@@ -101,14 +106,28 @@ def descargar_texto(texto_formateado):
         mime="text/plain"
     )
 
+
 st.title("Limpiador de Transcripciones de YouTube (con Gemini)")
 
 transcripcion = st.text_area("Pega aquí tu transcripción sin formato:")
 
-if transcripcion:
-    with st.spinner("Procesando con Gemini..."):
-        texto_limpio = procesar_transcripcion(transcripcion)
-        if texto_limpio:
-            st.subheader("Transcripción Formateada:")
-            st.write(texto_limpio)
-            descargar_texto(texto_limpio)
+# Inicializar el estado de la sesión para almacenar el texto procesado
+if 'texto_procesado' not in st.session_state:
+    st.session_state['texto_procesado'] = ""
+
+# Botón para procesar el texto
+if st.button("Procesar Texto"):
+    if transcripcion:
+        with st.spinner("Procesando con Gemini..."):
+            texto_limpio = procesar_transcripcion(transcripcion)
+            if texto_limpio:
+                st.session_state['texto_procesado'] = texto_limpio  # Guardar el texto procesado en el estado de la sesión
+                st.success("¡Texto procesado!")
+    else:
+        st.warning("Por favor, introduce el texto a procesar.")
+
+# Mostrar el texto procesado y el botón de descarga solo si hay texto procesado
+if st.session_state['texto_procesado']:
+    st.subheader("Transcripción Formateada:")
+    st.write(st.session_state['texto_procesado'])
+    descargar_texto(st.session_state['texto_procesado'])
