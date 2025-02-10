@@ -86,11 +86,11 @@ def limpiar_transcripcion_gemini(texto):
     - Dale un titulo preciso y llamativo.
     - Evita mencionar nombres de personajes o del autor.
     - Concentra el resumen en la experiencia general, las ideas principales, los temas y las emociones transmitidas por el texto.
-    - Utiliza un lenguaje evocador y personal, como si estuvieras compartiendo tus propias conclusiones tras una profunda reflexión.
+    - Utiliza un lenguaje serio y profesional, como si estuvieras compartiendo tus propias conclusiones tras una profunda reflexión.
     - No uses nombres propios ni nombres de lugares específicos, refiérete a ellos como "un lugar", "una persona", "otro personaje", etc.
     - Usa un lenguaje claro y directo
     - Escribe como si estuvieras narrando una historia
-    - Evita los asteriscos en el texto, dame tan solo el texto sin encabezados ni texto en negrita
+    - Evita decir hola amigos,o cosas similrares, se más serio y estricto en tu informacion.
     -Importante, el texto debe adaptarse para que el lector de voz de google lo lea lo mejor posible
         {texto}
 
