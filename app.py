@@ -14,7 +14,7 @@ try:
     GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
     print(f"API Key: {GOOGLE_API_KEY}")  # Imprime la API Key para verificar
     genai.configure(api_key=GOOGLE_API_KEY)
-    MODEL = "gemini-pro"  # O "gemini-1.0-pro" o el modelo que corresponda según ListModels()
+    MODEL = "Gemini 2.0 Flash"  # O "gemini-1.0-pro" o el modelo que corresponda según ListModels()
 
     # Listar los modelos disponibles
     print("Modelos disponibles:")
