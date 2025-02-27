@@ -1,58 +1,49 @@
 import streamlit as st
 import google.generativeai as genai
 import os
-import tiktoken
+import textwrap
+import tiktoken  # Importa la librería tiktoken
 
-st.set_page_config(page_title="texto-corto", layout="wide")
+st.set_page_config(
+    page_title="texto-corto",
+    layout="wide"
+)
 
 # Obtener la API Key de las variables de entorno
 try:
     GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-    print(f"API Key: '{GOOGLE_API_KEY}'")  # Imprime la API Key para verificar
-
+    print(f"API Key: {GOOGLE_API_KEY}")  # Imprime la API Key para verificar
     genai.configure(api_key=GOOGLE_API_KEY)
+    MODEL = "gemini-pro"  # O "gemini-1.0-pro" o el modelo que corresponda según ListModels()
 
     # Listar los modelos disponibles
-    st.write("Modelos disponibles:")
-    available_models = list(genai.list_models())
-    for model in available_models:
-        st.write(model)
-
-    if not available_models:
-        st.error("No se encontraron modelos disponibles.  Verifica tu API Key y permisos.")
-        st.stop()
-
-    # Selecciona un modelo (asegúrate de que esté en la lista de modelos disponibles)
-    MODEL = None
-    for model in available_models:
-        if "gemini-pro" in model.name:  # Encuentra un modelo que contenga "gemini-pro" en su nombre
-            MODEL = model.name
-            break
-    
-    if MODEL is None:
-        st.error("No se encontró un modelo 'gemini-pro' (o similar) en la lista de modelos disponibles.  Revisa la salida de ListModels().")
-        st.stop()
-
-    st.write(f"Usando modelo: {MODEL}") # Imprime el modelo que se va a usar
+    print("Modelos disponibles:")
+    for model in genai.list_models():
+        print(model)
 
 except KeyError:
     st.error("La variable de entorno GOOGLE_API_KEY no está configurada.")
-    st.stop()
+    st.stop()  # Detener la app si no hay API Key
 
-# Inicializa el tokenizador
+# Inicializa el tokenizador (¡IMPORTANTE!)
 try:
     encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")  # O el modelo que uses
 except Exception as e:
     st.error(f"Error al cargar el tokenizador: {e}. Asegúrate de tener tiktoken instalado (`pip install tiktoken`).")
     st.stop()
 
+
 def contar_tokens(texto):
+    """Cuenta tokens usando tiktoken."""
     return len(encoding.encode(texto))
 
+
 def dividir_texto_dinamico(texto, tamano_fragmento_pequeno=750, tamano_fragmento_mediano=1500):
+    """Divide el texto en fragmentos más pequeños dinámicamente."""
     longitud_texto = contar_tokens(texto)
+
     if longitud_texto < 1000:
-        return [texto]
+        return [texto]  # No dividir si es muy corto
     elif longitud_texto < 5000:
         max_tokens = tamano_fragmento_mediano
         st.info(f"Dividiendo en fragmentos medianos (max {max_tokens} tokens).")
@@ -64,9 +55,9 @@ def dividir_texto_dinamico(texto, tamano_fragmento_pequeno=750, tamano_fragmento
     fragmento_actual = []
     cuenta_tokens_actual = 0
 
-    palabras = texto.split()
+    palabras = texto.split()  # Dividir por palabras para mejor control
     for palabra in palabras:
-        tokens_palabra = contar_tokens(palabra)
+        tokens_palabra = contar_tokens(palabra)  # Tokenizar cada palabra
 
         if cuenta_tokens_actual + tokens_palabra <= max_tokens:
             fragmento_actual.append(palabra)
@@ -82,7 +73,17 @@ def dividir_texto_dinamico(texto, tamano_fragmento_pequeno=750, tamano_fragmento
     st.info(f"Texto dividido en {len(fragmentos)} fragmentos.")
     return fragmentos
 
+
 def limpiar_transcripcion_gemini(texto):
+    """
+    Limpia una transcripción usando Gemini.
+
+    Args:
+      texto (str): La transcripción sin formato.
+
+    Returns:
+      str: La transcripción formateada.
+    """
     prompt = f"""
        Reescribe el siguiente texto con un tono más profesional y formal. Escribe en primera persona, como si tú hubieras vivido la experiencia o reflexionado sobre los temas presentados.
     Sigue estas pautas:
@@ -111,17 +112,29 @@ def limpiar_transcripcion_gemini(texto):
         st.error(f"Error al procesar con Gemini: {e}")
         return None
 
+
 def procesar_transcripcion(texto):
+    """Procesa el texto dividiendo en fragmentos y usando Gemini."""
     fragmentos = dividir_texto_dinamico(texto)
     texto_limpio_completo = ""
     for i, fragmento in enumerate(fragmentos):
         st.write(f"Procesando fragmento {i + 1}/{len(fragmentos)}")
         texto_limpio = limpiar_transcripcion_gemini(fragmento)
         if texto_limpio:
-            texto_limpio_completo += texto_limpio + " "
+            texto_limpio_completo += texto_limpio + " "  # Agregar espacio para evitar que las frases se unan
     return texto_limpio_completo.strip()
 
+
 def descargar_texto(texto_formateado):
+    """
+    Genera un enlace de descarga para el texto formateado.
+
+    Args:
+        texto_formateado (str): El texto formateado.
+
+    Returns:
+        streamlit.components.v1.html: Enlace de descarga.
+    """
     return st.download_button(
         label="Descargar Texto",
         data=texto_formateado.encode('utf-8'),
@@ -129,29 +142,37 @@ def descargar_texto(texto_formateado):
         mime="text/plain"
     )
 
+
 st.title("Limpiador de Transcripciones de YouTube (con Gemini)")
 
 transcripcion = st.text_area("Pega aquí tu transcripción sin formato:")
 
+# Inicializar el estado de la sesión para almacenar el texto procesado
 if 'texto_procesado' not in st.session_state:
     st.session_state['texto_procesado'] = ""
 
+# Botón para procesar el texto
 if st.button("Procesar Texto"):
     if transcripcion:
+        # Antes de procesar, muestra la longitud del texto original
         longitud_original = contar_tokens(transcripcion)
         st.info(f"Longitud del texto original: {longitud_original} tokens.")
 
         with st.spinner("Procesando con Gemini..."):
             texto_limpio = procesar_transcripcion(transcripcion)
             if texto_limpio:
-                st.session_state['texto_procesado'] = texto_limpio
+                st.session_state['texto_procesado'] = texto_limpio  # Guardar el texto procesado en el estado de la sesión
                 st.success("¡Texto procesado!")
 
+                # Después de procesar, muestra la longitud del texto resultante
                 longitud_resultante = contar_tokens(texto_limpio)
                 st.info(f"Longitud del texto resultante: {longitud_resultante} tokens.")
+
+
     else:
         st.warning("Por favor, introduce el texto a procesar.")
 
+# Mostrar el texto procesado y el botón de descarga solo si hay texto procesado
 if st.session_state['texto_procesado']:
     st.subheader("Transcripción Formateada:")
     st.write(st.session_state['texto_procesado'])
