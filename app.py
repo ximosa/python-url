@@ -12,8 +12,15 @@ st.set_page_config(
 # Obtener la API Key de las variables de entorno
 try:
     GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+    print(f"API Key: {GOOGLE_API_KEY}")  # Imprime la API Key para verificar
     genai.configure(api_key=GOOGLE_API_KEY)
-    MODEL = "gemini-pro"
+    MODEL = "gemini-pro"  # O "gemini-1.0-pro" o el modelo que corresponda según ListModels()
+
+    # Listar los modelos disponibles
+    print("Modelos disponibles:")
+    for model in genai.list_models():
+        print(model)
+
 except KeyError:
     st.error("La variable de entorno GOOGLE_API_KEY no está configurada.")
     st.stop()  # Detener la app si no hay API Key
@@ -43,7 +50,7 @@ def dividir_texto_dinamico(texto, tamano_fragmento_pequeno=750, tamano_fragmento
     else:
         max_tokens = tamano_fragmento_pequeno
         st.info(f"Dividiendo en fragmentos pequeños (max {max_tokens} tokens).")
-    
+
     fragmentos = []
     fragmento_actual = []
     cuenta_tokens_actual = 0
