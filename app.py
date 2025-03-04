@@ -8,15 +8,10 @@ st.set_page_config(page_title="texto-corto", layout="wide")
 # Obtener la API Key de las variables de entorno
 try:
     GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-    print(f"API Key: '{GOOGLE_API_KEY}'")  # Imprime la API Key para verificar
-
     genai.configure(api_key=GOOGLE_API_KEY)
 
     # Listar los modelos disponibles
-    st.write("Modelos disponibles:")
     available_models = list(genai.list_models())
-    for model in available_models:
-        st.write(model)
 
     if not available_models:
         st.error("No se encontraron modelos disponibles. Verifica tu API Key y permisos.")
@@ -38,7 +33,6 @@ try:
             if "gemini-pro" in model.name.lower():
                 MODEL = model.name
                 break
-
 
     if MODEL is None:
         st.error("No se encontró un modelo 'gemini-1.5-flash-001', 'gemini-1.0-pro' o similar en la lista de modelos disponibles. Revisa la salida de ListModels().")
