@@ -8,31 +8,43 @@ st.set_page_config(page_title="texto-corto", layout="wide")
 # Obtener la API Key de las variables de entorno
 try:
     GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+    print(f"API Key: '{GOOGLE_API_KEY}'")  # Imprime la API Key para verificar
+
     genai.configure(api_key=GOOGLE_API_KEY)
 
-    # Listar los modelos disponibles para encontrar el correcto
-    available_models = [model.name for model in genai.list_models() if 'generateContent' in model.supported_generation_methods]
+    # Listar los modelos disponibles
+    st.write("Modelos disponibles:")
+    available_models = list(genai.list_models())
+    for model in available_models:
+        st.write(model)
 
     if not available_models:
-        st.error("No se encontraron modelos compatibles con `generateContent`.  Revisa tu API Key y permisos.")
+        st.error("No se encontraron modelos disponibles. Verifica tu API Key y permisos.")
         st.stop()
 
-    # Selecciona un modelo (prioriza 'gemini-1.5-flash-001' si está disponible)
+    # Selecciona un modelo (prioriza 'gemini-1.5-flash-001', luego 'gemini-1.0-pro', luego cualquier 'gemini-pro')
     MODEL = None
-    if 'gemini-1.5-flash-001' in available_models:
-        MODEL = 'gemini-1.5-flash-001'
-    elif 'gemini-1.5-pro' in available_models: #cambio por si el flash no esta
-        MODEL = 'gemini-1.5-pro'
-    elif 'gemini-1.0-pro' in available_models and 'gemini-1.0-pro' not in ['gemini-1.0-pro-vision','gemini-pro-vision']:#evitar vision, ya no esta soportado
-         MODEL = 'gemini-1.0-pro'   # Más robusto si flash no está disponible
-    elif any("gemini-pro" in model for model in available_models):
-        MODEL = next(model for model in available_models if "gemini-pro" in model) #elige uno generico gemini-pro
-    else:
-        st.error("No se encontró un modelo Gemini adecuado (flash o pro) en la lista de modelos disponibles. Revisa la salida de ListModels().")
+    for model in available_models:
+        if "gemini-1.5-flash-001" in model.name.lower():
+            MODEL = model.name
+            break
+    if MODEL is None:
+        for model in available_models:
+            if "gemini-1.0-pro" in model.name.lower():
+                MODEL = model.name
+                break
+    if MODEL is None:
+        for model in available_models:
+            if "gemini-pro" in model.name.lower():
+                MODEL = model.name
+                break
+
+
+    if MODEL is None:
+        st.error("No se encontró un modelo 'gemini-1.5-flash-001', 'gemini-1.0-pro' o similar en la lista de modelos disponibles. Revisa la salida de ListModels().")
         st.stop()
 
-
-    st.write(f"Usando modelo: {MODEL}")
+    st.write(f"Usando modelo: {MODEL}")  # Imprime el modelo que se va a usar
 
 except KeyError:
     st.error("La variable de entorno GOOGLE_API_KEY no está configurada.")
@@ -48,27 +60,55 @@ except Exception as e:
 def contar_tokens(texto):
     return len(encoding.encode(texto))
 
+def dividir_texto_dinamico(texto, tamano_fragmento_pequeno=750, tamano_fragmento_mediano=1500):
+    longitud_texto = contar_tokens(texto)
+    if longitud_texto < 1000:
+        return [texto]
+    elif longitud_texto < 5000:
+        max_tokens = tamano_fragmento_mediano
+        st.info(f"Dividiendo en fragmentos medianos (max {max_tokens} tokens).")
+    else:
+        max_tokens = tamano_fragmento_pequeno
+        st.info(f"Dividiendo en fragmentos pequeños (max {max_tokens} tokens).")
+
+    fragmentos = []
+    fragmento_actual = []
+    cuenta_tokens_actual = 0
+
+    palabras = texto.split()
+    for palabra in palabras:
+        tokens_palabra = contar_tokens(palabra)
+
+        if cuenta_tokens_actual + tokens_palabra <= max_tokens:
+            fragmento_actual.append(palabra)
+            cuenta_tokens_actual += tokens_palabra
+        else:
+            fragmentos.append(" ".join(fragmento_actual))
+            fragmento_actual = [palabra]
+            cuenta_tokens_actual = tokens_palabra
+
+    if fragmento_actual:
+        fragmentos.append(" ".join(fragmento_actual))
+
+    st.info(f"Texto dividido en {len(fragmentos)} fragmentos.")
+    return fragmentos
+
 def limpiar_transcripcion_gemini(texto):
     prompt = f"""
-       Reescribe el siguiente texto para que sea adecuado para la lectura por voz de Google.  Adopta un tono profesional, formal y narrativo en primera persona, como si compartieras tus propias reflexiones sobre el tema.
-
-       Sigue estas pautas estrictamente:
-
-       *   **Objetivo Principal:** Optimiza el texto para la claridad y fluidez de la lectura por voz.  Considera la entonación y las pausas naturales.
-       *   **Longitud:**  Mantén la longitud del texto resultante entre el 95% y el 105% del texto original.
-       *   **Expansión:** No te limites a resumir.  Expande las ideas, añade detalles y ejemplos relevantes para enriquecer el texto.  Si el texto parece incompleto, complétalo con información adicional.
-       *   **Título:** Genera un título conciso y atractivo que resuma el tema principal.
-       *   **Anonimato:** Evita mencionar nombres propios de personas o lugares específicos. Refiérete a ellos como "un individuo", "un lugar", "otro personaje", etc. Esto facilita la comprensión auditiva.
-       *   **Estilo:**
-            *   Utiliza un lenguaje claro, directo y profesional.  Evita jerga innecesaria.
-            *   Escribe en primera persona, como si estuvieras compartiendo tus propias experiencias y conclusiones.
-            *   Adopta un tono narrativo y reflexivo.
-       *   **Elimina:** Evita saludos informales como "Hola amigos" o introducciones similares. Comienza directamente con el tema.
-       *   **Adaptación para Voz:**
-            *   Considera cómo se pronunciarán las palabras y ajusta la redacción para facilitar la dicción del lector de voz.
-            *   Utiliza oraciones bien estructuradas con pausas naturales.
-            *   Asegúrate de que el texto fluya lógicamente para una fácil comprensión auditiva.
-
+       Reescribe el siguiente texto con un tono más profesional y formal. Escribe en primera persona, como si tú hubieras vivido la experiencia o reflexionado sobre los temas presentados.
+    Sigue estas pautas:
+    - Reescribe el siguiente texto utilizando tus propias palabras, y asegúrate de que **el texto resultante tenga entre el 90% y el 110% de la longitud (en número de tokens) del texto de entrada**.
+    - No reduzcas la información, e intenta expandir cada punto si es posible. Si el texto parece incompleto o le falta algo, añade detalles relevantes.
+    - No me generes un resumen, quiero un texto parafraseado y expandido con una longitud comparable al texto original.
+    - Dale un titulo preciso y llamativo.
+    - Evita mencionar nombres de personajes o del autor.
+    - Concentra el resumen en la experiencia general, las ideas principales, los temas y las emociones transmitidas por el texto.
+    - Utiliza un lenguaje serio y profesional, como si estuvieras compartiendo tus propias conclusiones tras una profunda reflexión.
+    - No uses nombres propios ni nombres de lugares específicos, refiérete a ellos como "un lugar", "una persona", otro personaje", etc.
+    - Usa un lenguaje claro y directo
+    - Escribe como si estuvieras narrando una historia
+    - Evita decir hola amigos,o cosas similrares, se más serio y estricto en tu informacion.
+    -Importante, el texto debe adaptarse para que el lector de voz de google lo lea lo mejor posible
         {texto}
 
         Texto corregido:
@@ -83,13 +123,14 @@ def limpiar_transcripcion_gemini(texto):
         return None
 
 def procesar_transcripcion(texto):
-    with st.spinner("Procesando con Gemini..."):
-        texto_limpio = limpiar_transcripcion_gemini(texto)
+    fragmentos = dividir_texto_dinamico(texto)
+    texto_limpio_completo = ""
+    for i, fragmento in enumerate(fragmentos):
+        st.write(f"Procesando fragmento {i + 1}/{len(fragmentos)}")
+        texto_limpio = limpiar_transcripcion_gemini(fragmento)
         if texto_limpio:
-            st.success("¡Texto procesado!")
-            return texto_limpio
-        else:
-            return None
+            texto_limpio_completo += texto_limpio + " "
+    return texto_limpio_completo.strip()
 
 def descargar_texto(texto_formateado):
     return st.download_button(
@@ -99,24 +140,30 @@ def descargar_texto(texto_formateado):
         mime="text/plain"
     )
 
-st.title("Optimizador de Texto para Lectura por Voz")
-st.markdown("Introduce el texto que quieres optimizar para la lectura por voz de Google.")
+st.title("Limpiador de Transcripciones de YouTube (con Gemini)")
 
-transcripcion = st.text_area("Texto a optimizar:", height=300) #Aumentar el area
+transcripcion = st.text_area("Pega aquí tu transcripción sin formato:")
 
-if st.button("Optimizar Texto"):
+if 'texto_procesado' not in st.session_state:
+    st.session_state['texto_procesado'] = ""
+
+if st.button("Procesar Texto"):
     if transcripcion:
         longitud_original = contar_tokens(transcripcion)
         st.info(f"Longitud del texto original: {longitud_original} tokens.")
 
-        texto_limpio = procesar_transcripcion(transcripcion)
+        with st.spinner("Procesando con Gemini..."):
+            texto_limpio = procesar_transcripcion(transcripcion)
+            if texto_limpio:
+                st.session_state['texto_procesado'] = texto_limpio
+                st.success("¡Texto procesado!")
 
-        if texto_limpio:
-            longitud_resultante = contar_tokens(texto_limpio)
-            st.info(f"Longitud del texto resultante: {longitud_resultante} tokens.")
-
-            st.subheader("Texto Optimizado:")
-            st.write(texto_limpio) #Muestra directo el texto optimizado
-            descargar_texto(texto_limpio) #Permite descargarlo
+                longitud_resultante = contar_tokens(texto_limpio)
+                st.info(f"Longitud del texto resultante: {longitud_resultante} tokens.")
     else:
         st.warning("Por favor, introduce el texto a procesar.")
+
+if st.session_state['texto_procesado']:
+    st.subheader("Transcripción Formateada:")
+    st.write(st.session_state['texto_procesado'])
+    descargar_texto(st.session_state['texto_procesado'])
