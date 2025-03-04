@@ -10,8 +10,26 @@ try:
     GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
     genai.configure(api_key=GOOGLE_API_KEY)
 
-    # Selecciona un modelo
-    MODEL = "gemini-2.0-flash-1106"  # Modelo específico
+    # Listar los modelos disponibles para encontrar el correcto
+    available_models = [model.name for model in genai.list_models() if 'generateContent' in model.supported_generation_methods]
+
+    if not available_models:
+        st.error("No se encontraron modelos compatibles con `generateContent`.  Revisa tu API Key y permisos.")
+        st.stop()
+
+    # Selecciona un modelo (prioriza 'gemini-1.5-flash-001' si está disponible)
+    MODEL = None
+    if 'gemini-1.5-flash-001' in available_models:
+        MODEL = 'gemini-1.5-flash-001'
+    elif 'gemini-1.0-pro' in available_models:
+         MODEL = 'gemini-1.0-pro'   # Más robusto si flash no está disponible
+    elif any("gemini-pro" in model for model in available_models):
+        MODEL = next(model for model in available_models if "gemini-pro" in model) #elige uno generico gemini-pro
+    else:
+        st.error("No se encontró un modelo Gemini adecuado (flash o pro) en la lista de modelos disponibles. Revisa la salida de ListModels().")
+        st.stop()
+
+
     st.write(f"Usando modelo: {MODEL}")
 
 except KeyError:
