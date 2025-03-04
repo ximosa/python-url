@@ -10,35 +10,17 @@ try:
     GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
     genai.configure(api_key=GOOGLE_API_KEY)
 
-    # Listar los modelos disponibles
-    available_models = list(genai.list_models())
+    # Listar los modelos disponibles que soporten generateContent
+    available_models = [model.name for model in genai.list_models() if 'generateContent' in model.supported_generation_methods]
 
     if not available_models:
-        st.error("No se encontraron modelos disponibles. Verifica tu API Key y permisos.")
+        st.error("No se encontraron modelos compatibles con `generateContent`.  Revisa tu API Key y permisos.")
         st.stop()
 
-    # Selecciona un modelo (prioriza 'gemini-1.5-flash-001', luego 'gemini-1.0-pro', luego cualquier 'gemini-pro')
-    MODEL = None
-    for model in available_models:
-        if "gemini-1.5-flash-001" in model.name.lower():
-            MODEL = model.name
-            break
-    if MODEL is None:
-        for model in available_models:
-            if "gemini-1.0-pro" in model.name.lower():
-                MODEL = model.name
-                break
-    if MODEL is None:
-        for model in available_models:
-            if "gemini-pro" in model.name.lower():
-                MODEL = model.name
-                break
+    # Permitir al usuario seleccionar un modelo
+    MODEL = st.selectbox("Selecciona un modelo Gemini:", available_models)
 
-    if MODEL is None:
-        st.error("No se encontró un modelo 'gemini-1.5-flash-001', 'gemini-1.0-pro' o similar en la lista de modelos disponibles. Revisa la salida de ListModels().")
-        st.stop()
-
-    st.write(f"Usando modelo: {MODEL}")  # Imprime el modelo que se va a usar
+    st.write(f"Usando modelo: {MODEL}")
 
 except KeyError:
     st.error("La variable de entorno GOOGLE_API_KEY no está configurada.")
