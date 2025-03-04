@@ -21,7 +21,9 @@ try:
     MODEL = None
     if 'gemini-1.5-flash-001' in available_models:
         MODEL = 'gemini-1.5-flash-001'
-    elif 'gemini-1.0-pro' in available_models:
+    elif 'gemini-1.5-pro' in available_models: #cambio por si el flash no esta
+        MODEL = 'gemini-1.5-pro'
+    elif 'gemini-1.0-pro' in available_models and 'gemini-1.0-pro' not in ['gemini-1.0-pro-vision','gemini-pro-vision']:#evitar vision, ya no esta soportado
          MODEL = 'gemini-1.0-pro'   # Más robusto si flash no está disponible
     elif any("gemini-pro" in model for model in available_models):
         MODEL = next(model for model in available_models if "gemini-pro" in model) #elige uno generico gemini-pro
