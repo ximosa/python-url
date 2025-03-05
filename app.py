@@ -42,6 +42,7 @@ def dividir_texto_coherente(texto, tamano_fragmento_pequeno=750, tamano_fragment
     Agrega superposición para dar contexto.
     """
     longitud_texto = contar_tokens(texto)
+    print(f"Longitud del texto: {longitud_texto} tokens")  # Depuración
     if longitud_texto < 1000:
         return [texto]
     elif longitud_texto < 5000:
@@ -54,16 +55,17 @@ def dividir_texto_coherente(texto, tamano_fragmento_pequeno=750, tamano_fragment
     fragmentos = []
     inicio = 0
     while inicio < len(texto):
-        # Encontrar el punto de división ideal cerca del tamaño máximo.
+        print(f"Inicio del bucle: inicio = {inicio}, len(texto) = {len(texto)}")  # Depuración
         fin = encontrar_punto_division(texto, inicio, max_tokens, encoding)
+        print(f"Después de encontrar_punto_division: fin = {fin}")  # Depuración
 
         fragmento = texto[inicio:fin]
         fragmentos.append(fragmento)
 
-        # Calcular el nuevo inicio, aplicando la superposición.
-        inicio = fin - overlap_tokens if fin - overlap_tokens > 0 else fin # Asegura que el inicio no sea negativo
+        inicio = fin - overlap_tokens if fin - overlap_tokens > 0 else fin
+        print(f"Nuevo valor de inicio: inicio = {inicio}")  # Depuración
 
-    st.info(f"Texto dividido en {len(fragmentos)} fragmentos.")
+    print(f"Número de fragmentos creados: {len(fragmentos)}")  # Depuración
     return fragmentos
 
 
@@ -75,20 +77,23 @@ def encontrar_punto_division(texto, inicio, max_tokens, encoding):
     punto_ideal = inicio
     tokens_acumulados = 0
     for i in range(inicio, len(texto)):
-        tokens_acumulados += len(encoding.encode(texto[i])) #Esto hacia que el token acumulado fuera incorrecto
+        tokens_acumulados += len(encoding.encode(texto[i]))
         if tokens_acumulados > max_tokens:
             punto_ideal = i
             break
 
+    print(f"Punto ideal calculado: punto_ideal = {punto_ideal}")  # Depuración
 
     # Busca el final de una oración hacia atrás desde el punto ideal.
     for i in range(min(len(texto) - 1, punto_ideal), inicio, -1):
+        print(f"Búsqueda de final de oración: i = {i}, texto[i] = {texto[i]}")  # Depuración
         if texto[i] in ['.', '!', '?']:
+            print(f"Final de oración encontrado en i = {i}")  # Depuración
             return i + 1  # Divide después del signo de puntuación.
 
-
     # Si no se encuentra un final de oración, divide en el punto ideal (puede romper una oración).
-    return punto_ideal if punto_ideal > inicio else len(texto) #Si punto_ideal no se actualizo, regresa el final del texto
+    print(f"No se encontró final de oración, dividiendo en punto_ideal = {punto_ideal}")  # Depuración
+    return punto_ideal if punto_ideal > inicio else len(texto)
 
 def limpiar_transcripcion_gemini(texto):
     prompt = f"""
