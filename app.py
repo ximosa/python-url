@@ -36,7 +36,11 @@ except Exception as e:
 def contar_tokens(texto):
     return len(encoding.encode(texto))
 
-def dividir_texto_dinamico(texto, tamano_fragmento_pequeno=750, tamano_fragmento_mediano=1500):
+def dividir_texto_coherente(texto, tamano_fragmento_pequeno=750, tamano_fragmento_mediano=1500, overlap_tokens=100):
+    """
+    Divide el texto intentando mantener la coherencia semántica (oraciones completas).
+    Agrega superposición para dar contexto.
+    """
     longitud_texto = contar_tokens(texto)
     if longitud_texto < 1000:
         return [texto]
@@ -48,26 +52,43 @@ def dividir_texto_dinamico(texto, tamano_fragmento_pequeno=750, tamano_fragmento
         st.info(f"Dividiendo en fragmentos pequeños (max {max_tokens} tokens).")
 
     fragmentos = []
-    fragmento_actual = []
-    cuenta_tokens_actual = 0
+    inicio = 0
+    while inicio < len(texto):
+        # Encontrar el punto de división ideal cerca del tamaño máximo.
+        fin = encontrar_punto_division(texto, inicio, max_tokens, encoding)
 
-    palabras = texto.split()
-    for palabra in palabras:
-        tokens_palabra = contar_tokens(palabra)
+        fragmento = texto[inicio:fin]
+        fragmentos.append(fragmento)
 
-        if cuenta_tokens_actual + tokens_palabra <= max_tokens:
-            fragmento_actual.append(palabra)
-            cuenta_tokens_actual += tokens_palabra
-        else:
-            fragmentos.append(" ".join(fragmento_actual))
-            fragmento_actual = [palabra]
-            cuenta_tokens_actual = tokens_palabra
-
-    if fragmento_actual:
-        fragmentos.append(" ".join(fragmento_actual))
+        # Calcular el nuevo inicio, aplicando la superposición.
+        inicio = fin - overlap_tokens if fin - overlap_tokens > 0 else fin # Asegura que el inicio no sea negativo
 
     st.info(f"Texto dividido en {len(fragmentos)} fragmentos.")
     return fragmentos
+
+
+def encontrar_punto_division(texto, inicio, max_tokens, encoding):
+    """
+    Encuentra un buen punto para dividir, priorizando el final de una oración.
+    """
+    # Calcula el punto ideal basado en tokens, no caracteres.
+    punto_ideal = inicio
+    tokens_acumulados = 0
+    for i in range(inicio, len(texto)):
+        tokens_acumulados += len(encoding.encode(texto[i])) #Esto hacia que el token acumulado fuera incorrecto
+        if tokens_acumulados > max_tokens:
+            punto_ideal = i
+            break
+
+
+    # Busca el final de una oración hacia atrás desde el punto ideal.
+    for i in range(min(len(texto) - 1, punto_ideal), inicio, -1):
+        if texto[i] in ['.', '!', '?']:
+            return i + 1  # Divide después del signo de puntuación.
+
+
+    # Si no se encuentra un final de oración, divide en el punto ideal (puede romper una oración).
+    return punto_ideal if punto_ideal > inicio else len(texto) #Si punto_ideal no se actualizo, regresa el final del texto
 
 def limpiar_transcripcion_gemini(texto):
     prompt = f"""
@@ -99,7 +120,7 @@ def limpiar_transcripcion_gemini(texto):
         return None
 
 def procesar_transcripcion(texto):
-    fragmentos = dividir_texto_dinamico(texto)
+    fragmentos = dividir_texto_coherente(texto)
     texto_limpio_completo = ""
     for i, fragmento in enumerate(fragmentos):
         st.write(f"Procesando fragmento {i + 1}/{len(fragmentos)}")
