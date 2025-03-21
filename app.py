@@ -76,7 +76,7 @@ def limpiar_transcripcion_gemini(texto):
     - Reescribe el siguiente texto utilizando tus propias palabras, y asegúrate de que **el texto resultante tenga entre el 90% y el 110% de la longitud (en número de tokens) del texto de entrada**.
     - No reduzcas la información, e intenta expandir cada punto si es posible. Si el texto parece incompleto o le falta algo, añade detalles relevantes.
     - No me generes un resumen, quiero un texto parafraseado y expandido con una longitud comparable al texto original.
-    - Dale un titulo preciso y llamativo.
+    - Dale un titulo preciso y llamativo para videos de youtube.
     - Evita mencionar nombres de personajes o del autor.
     - Concentra el resumen en la experiencia general, las ideas principales, los temas y las emociones transmitidas por el texto.
     - Utiliza un lenguaje serio y profesional, como si estuvieras compartiendo tus propias conclusiones tras una profunda reflexión.
